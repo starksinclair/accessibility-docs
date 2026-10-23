@@ -1,0 +1,40 @@
+{
+  "name": "accessibility-docs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:core": "npm run build -w @accessibility-docs/core",
+    "build:rules": "esbuild src/gas-rules-entry.ts --bundle --outfile=dist/Rules.js --format=iife --global-name=__a11yCore --footer:js=\"Object.assign(globalThis, __a11yCore);\"",
+    "build": "npm run build:core && tsc && npm run build:rules && cp src/*.html dist/",
+    "build:author": "npm run build:core && npm run build -w @accessibility-docs/author",
+    "dev:author": "npm run build:core && npm run dev -w @accessibility-docs/author",
+    "lint": "eslint src --max-warnings 0",
+    "lint:fix": "eslint src --fix",
+    "push": "npm run build && clasp push",
+    "open": "clasp open-script"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@accessibility-docs/core": "*"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@google/clasp": "^3.4.1",
+    "@types/google-apps-script": "^2.0.13",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "typescript": "~5.9.0",
+    "typescript-eslint": "^8.71.2"
+  }
+}

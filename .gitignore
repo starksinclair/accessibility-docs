@@ -1,0 +1,10 @@
+node_modules/
+dist/
+apps/author/dist/
+packages/core/dist/
+.idea/
+.DS_Store
+.env
+.env.*
+*.log
+.vite/

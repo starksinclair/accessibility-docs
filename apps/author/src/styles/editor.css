@@ -1,0 +1,384 @@
+:root {
+  --ink: #1c1917;
+  --muted: #78716c;
+  --paper: #fafaf9;
+  --panel: #ffffff;
+  --line: #e7e5e4;
+  --accent: #0f766e;
+  --accent-hover: #0d9488;
+  --error: #b91c1c;
+  --warning: #c2410c;
+  --manual: #1d4ed8;
+  --ok: #15803d;
+  --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino,
+    serif;
+  --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--sans);
+  background:
+    radial-gradient(circle at top left, #ecfdf5 0, transparent 40%),
+    linear-gradient(180deg, #f5f5f4 0%, var(--paper) 45%, #f0fdf4 100%);
+}
+
+.author-layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+.author-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: #ecfdf5;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-family: var(--serif);
+}
+
+.brand p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.doc-name {
+  display: grid;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.doc-name input {
+  min-width: 220px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: #a8a29e;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+button.primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+button.secondary {
+  background: #f5f5f4;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(6px);
+}
+
+.toolbar button.active {
+  background: #ccfbf1;
+  border-color: #5eead4;
+}
+
+.author-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .author-main {
+    grid-template-columns: 1fr;
+  }
+}
+
+.editor-shell {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 18px 40px rgba(28, 25, 23, 0.06);
+  min-height: 70vh;
+}
+
+.editor-surface .tiptap {
+  min-height: 70vh;
+  padding: 48px 56px;
+  outline: none;
+  font-family: var(--serif);
+  font-size: 1.125rem;
+  line-height: 1.7;
+}
+
+.editor-surface .tiptap p {
+  margin: 0 0 1rem;
+}
+
+.editor-surface .tiptap .a11y-block-error {
+  box-shadow: inset 3px 0 0 var(--error);
+  background: #fef2f2;
+}
+
+.editor-surface .tiptap .a11y-block-warning {
+  box-shadow: inset 3px 0 0 var(--warning);
+  background: #fff7ed;
+}
+
+.editor-surface .tiptap .a11y-block-manual {
+  box-shadow: inset 3px 0 0 var(--manual);
+  background: #eff6ff;
+}
+
+.a11y-inline {
+  margin: 0 0 1rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.a11y-inline-line {
+  margin: 0.15rem 0 0;
+}
+
+.a11y-inline-line strong {
+  font-weight: 650;
+  margin-right: 0.25rem;
+}
+
+.a11y-inline-line.error {
+  color: var(--error);
+}
+
+.a11y-inline-line.warning {
+  color: var(--warning);
+}
+
+.a11y-inline-line.manual {
+  color: var(--manual);
+}
+
+.editor-surface .tiptap h1[data-title="true"] {
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin: 0 0 1.25rem;
+  line-height: 1.2;
+}
+
+.editor-surface .tiptap h1 {
+  font-size: 1.9rem;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.editor-surface .tiptap h2 {
+  font-size: 1.5rem;
+  margin: 1.35rem 0 0.65rem;
+}
+
+.editor-surface .tiptap h3 {
+  font-size: 1.25rem;
+  margin: 1.2rem 0 0.55rem;
+}
+
+.editor-surface .tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  margin: 1rem 0;
+}
+
+.editor-surface .tiptap p.is-editor-empty:first-child::before {
+  color: #a8a29e;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.report-panel {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 16px;
+  position: sticky;
+  top: 16px;
+}
+
+.report-panel h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-family: var(--serif);
+}
+
+.muted {
+  color: var(--muted);
+  margin: 0;
+}
+
+.banner {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.banner.error {
+  background: #fef2f2;
+  color: var(--error);
+}
+
+.banner.warn {
+  background: #fff7ed;
+  color: var(--warning);
+}
+
+.banner.ok {
+  background: #f0fdf4;
+  color: var(--ok);
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+}
+
+.chip.error {
+  color: var(--error);
+}
+.chip.warning {
+  color: var(--warning);
+}
+.chip.manual {
+  color: var(--manual);
+}
+
+.issue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.issue {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.issue-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.issue p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.issue .help {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.severity {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+.issue.error .severity {
+  color: var(--error);
+}
+.issue.warning .severity {
+  color: var(--warning);
+}
+.issue.manual .severity {
+  color: var(--manual);
+}
+
+.hidden-input {
+  display: none;
+}

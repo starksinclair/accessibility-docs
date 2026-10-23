@@ -1,0 +1,25 @@
+{
+  "name": "@accessibility-docs/core",
+  "version": "1.0.0",
+  "description": "Shared DocumentModel types and accessibility rules for checker and authoring tools",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "~5.9.0"
+  }
+}

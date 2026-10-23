@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <style>
+      :root {
+        --text: #1f1f1f;
+        --muted: #5f6368;
+        --border: #dadce0;
+        --bg: #f8f9fa;
+        --error: #c5221f;
+        --warning: #e37400;
+        --manual: #1a73e8;
+        --ok: #137333;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font: 13px/1.45 "Google Sans", Arial, sans-serif;
+        color: var(--text);
+        margin: 0;
+        padding: 16px;
+        background: #fff;
+      }
+
+      h1 {
+        font-size: 16px;
+        font-weight: 500;
+        margin: 0 0 4px;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        margin: 0 0 16px;
+      }
+
+      button {
+        width: 100%;
+        border: none;
+        border-radius: 4px;
+        background: #1a73e8;
+        color: #fff;
+        font: inherit;
+        font-weight: 500;
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #1557b0;
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+
+      .summary {
+        display: flex;
+        gap: 8px;
+        margin: 16px 0 12px;
+        flex-wrap: wrap;
+      }
+
+      .chip {
+        border-radius: 999px;
+        padding: 4px 10px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        font-size: 12px;
+      }
+
+      .chip.error {
+        color: var(--error);
+      }
+      .chip.warning {
+        color: var(--warning);
+      }
+      .chip.manual {
+        color: var(--manual);
+      }
+      .chip.ok {
+        color: var(--ok);
+      }
+
+      .issue {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 10px;
+        background: #fff;
+      }
+
+      .issue-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+
+      .code {
+        font-weight: 600;
+      }
+
+      .severity {
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.03em;
+      }
+
+      .severity.error {
+        color: var(--error);
+      }
+      .severity.warning {
+        color: var(--warning);
+      }
+      .severity.manual {
+        color: var(--manual);
+      }
+
+      .help {
+        color: var(--muted);
+        margin-top: 6px;
+      }
+
+      .empty,
+      .status,
+      .error-box {
+        margin-top: 16px;
+        color: var(--muted);
+      }
+
+      .error-box {
+        color: var(--error);
+      }
+
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Accessibility checker</h1>
+    <p class="subtitle" id="docName">Checking the active document</p>
+
+    <button id="runBtn" onclick="runCheck()">Run check</button>
+
+    <div id="status" class="status hidden">Running…</div>
+    <div id="error" class="error-box hidden"></div>
+
+    <div id="results" class="hidden">
+      <div class="summary" id="summary"></div>
+      <div id="issues"></div>
+    </div>
+
+    <script>
+      function runCheck() {
+        const runBtn = document.getElementById("runBtn");
+        const status = document.getElementById("status");
+        const error = document.getElementById("error");
+        const results = document.getElementById("results");
+
+        runBtn.disabled = true;
+        status.classList.remove("hidden");
+        error.classList.add("hidden");
+        results.classList.add("hidden");
+
+        google.script.run
+          .withSuccessHandler(renderReport)
+          .withFailureHandler(showError)
+          .getAccessibilityReport();
+      }
+
+      function renderReport(data) {
+        document.getElementById("runBtn").disabled = false;
+        document.getElementById("status").classList.add("hidden");
+        document.getElementById("docName").textContent = data.documentName;
+
+        const summary = document.getElementById("summary");
+        const issues = document.getElementById("issues");
+        const results = document.getElementById("results");
+
+        summary.innerHTML = "";
+        issues.innerHTML = "";
+
+        if (data.issues.length === 0) {
+          summary.innerHTML =
+            '<span class="chip ok">No issues found</span>';
+        } else {
+          summary.innerHTML =
+            '<span class="chip error">' +
+            data.errorCount +
+            " errors</span>" +
+            '<span class="chip warning">' +
+            data.warningCount +
+            " warnings</span>" +
+            '<span class="chip manual">' +
+            data.manualCheckCount +
+            " manual</span>";
+
+          data.issues.forEach(function (issue) {
+            const el = document.createElement("div");
+            el.className = "issue";
+            el.innerHTML =
+              '<div class="issue-header">' +
+              '<span class="code">' +
+              escapeHtml(issue.code) +
+              "</span>" +
+              '<span class="severity ' +
+              escapeHtml(issue.severity) +
+              '">' +
+              escapeHtml(issue.severity) +
+              "</span>" +
+              "</div>" +
+              "<div>" +
+              escapeHtml(issue.message) +
+              "</div>" +
+              (issue.help
+                ? '<div class="help">' + escapeHtml(issue.help) + "</div>"
+                : "");
+            issues.appendChild(el);
+          });
+        }
+
+        results.classList.remove("hidden");
+      }
+
+      function showError(err) {
+        document.getElementById("runBtn").disabled = false;
+        document.getElementById("status").classList.add("hidden");
+        const error = document.getElementById("error");
+        error.textContent = err && err.message ? err.message : String(err);
+        error.classList.remove("hidden");
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      runCheck();
+    </script>
+  </body>
+</html>

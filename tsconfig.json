@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "types": ["google-apps-script"],
+    "strict": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "module": "ES2020",
+    "moduleDetection": "legacy",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/gas-rules-entry.ts"]
+}
