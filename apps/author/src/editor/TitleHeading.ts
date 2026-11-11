@@ -15,4 +15,34 @@ export const TitleHeading = Heading.extend({
       },
     };
   },
+
+  addCommands() {
+    return {
+      setHeading:
+        (attributes) =>
+        ({ commands }) => {
+          if (!this.options.levels.includes(attributes.level)) {
+            return false;
+          }
+
+          const asTitle =
+            "asTitle" in attributes &&
+            (attributes as { asTitle?: boolean }).asTitle === true;
+
+          return commands.setNode(this.name, { ...attributes, asTitle });
+        },
+      toggleHeading:
+        (attributes) =>
+        ({ commands }) => {
+          if (!this.options.levels.includes(attributes.level)) {
+            return false;
+          }
+
+          return commands.toggleNode(this.name, "paragraph", {
+            ...attributes,
+            asTitle: false,
+          });
+        },
+    };
+  },
 });

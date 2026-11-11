@@ -42,12 +42,18 @@ function mapNode(node: JSONContent): DocumentNode | null {
     case "title":
       return { type: "title", text: textFromNode(node) };
     case "paragraph":
+    case "bulletList":
+    case "orderedList":
+    case "taskList":
+    case "blockquote":
+    case "codeBlock":
+    case "table":
       return {
         type: "paragraph",
         text: textFromNode(node),
         formatting: {
           bold: hasMark(node, "bold"),
-          fontSize: null,
+          fontSize: fontSizeFromNode(node),
         },
       };
     case "figure":
@@ -77,6 +83,26 @@ function textFromNode(node: JSONContent): string {
       return textFromNode(child);
     })
     .join("");
+}
+
+function fontSizeFromNode(node: JSONContent): number | null {
+  for (const mark of node.marks ?? []) {
+    if (mark.type === "textStyle" && typeof mark.attrs?.fontSize === "string") {
+      const value = Number.parseFloat(mark.attrs.fontSize);
+      if (Number.isFinite(value)) {
+        return value;
+      }
+    }
+  }
+
+  for (const child of node.content ?? []) {
+    const size = fontSizeFromNode(child);
+    if (size !== null) {
+      return size;
+    }
+  }
+
+  return null;
 }
 
 function hasMark(node: JSONContent, markName: string): boolean {

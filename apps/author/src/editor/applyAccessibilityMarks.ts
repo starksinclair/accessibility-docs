@@ -26,7 +26,13 @@ function isDocumentBlock(node: PmNode): boolean {
     node.type.name === "title" ||
     node.type.name === "paragraph" ||
     node.type.name === "figure" ||
-    node.type.name === "image"
+    node.type.name === "image" ||
+    node.type.name === "bulletList" ||
+    node.type.name === "orderedList" ||
+    node.type.name === "taskList" ||
+    node.type.name === "blockquote" ||
+    node.type.name === "codeBlock" ||
+    node.type.name === "table"
   );
 }
 

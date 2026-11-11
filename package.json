@@ -23,9 +23,17 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "overrides": {
+    "@tiptap/core": "3.32.2",
+    "@tiptap/pm": "3.32.2"
+  },
   "type": "commonjs",
   "dependencies": {
-    "@accessibility-docs/core": "*"
+    "@accessibility-docs/core": "*",
+    "@tiptap/core": "3.32.2",
+    "@tiptap/pm": "3.32.2",
+    "@tiptap/react": "3.32.2",
+    "@tiptap/starter-kit": "3.32.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
