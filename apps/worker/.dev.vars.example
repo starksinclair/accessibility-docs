@@ -1,0 +1,2 @@
+# Copy to apps/worker/.dev.vars for local wrangler dev (never commit .dev.vars).
+GEMINI_API_KEY=

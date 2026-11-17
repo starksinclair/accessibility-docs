@@ -1,0 +1,145 @@
+/**
+ * Ball State University 2025 brand tokens
+ * Source: docs/BSU-2025-Brand Guidelines-For Release-061225.pdf
+ *
+ * Primary (p.60):   Cardinal #BA0C2F · White #FFFFFF · Black #000000 · Cool Gray #54585A
+ * Secondary (p.60): Gold #FDDE69 · Sky #AEDBE9 · Leaf #BAD57E · Lake #0079A7
+ * Contrast (p.61):  Cardinal / Black / Gray / Lake pass AA on white.
+ *                   Gold, Sky and Leaf pass ONLY on black or gray, and the
+ *                   cardinal-background pairings are reserved for bold text
+ *                   at 18.66px+ bold or 24px+ regular.
+ * Type (p.63-65):   IvyPresto Display  -> headlines, all-caps bold or sentence-case semibold
+ *                   Acumin Pro XCond Bold -> eyebrows, subheads, call-outs
+ *                   Helvetica Neue LT Std -> body copy, line spacing ~1.22x
+ * Both IvyPresto and Acumin Pro are Adobe Fonts; the Google faces below are the
+ * licensed-free web stand-ins and sit behind the real families in each stack.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  /* --- Primary palette --- */
+  --bsu-cardinal: #ba0c2f;
+  --bsu-cardinal-deep: #8f0924;
+  --bsu-white: #ffffff;
+  --bsu-black: #000000;
+  --bsu-gray: #54585a;
+
+  /* --- Secondary palette --- */
+  --bsu-gold: #fdde69;
+  --bsu-sky: #aedbe9;
+  --bsu-leaf: #bad57e;
+  --bsu-lake: #0079a7;
+
+  /* --- Semantic surface + text --- */
+  --ink: #16181a;
+  --ink-soft: #3a3e41;
+  --muted: var(--bsu-gray);
+  --paper: #f4f2f0;
+  --paper-alt: #eceae7;
+  --panel: var(--bsu-white);
+  --carbon: #1c1e20; /* the "black" swatch used behind gold/sky/leaf */
+  --line: #d7d2cd;
+  --line-strong: #b9b2ab;
+
+  --accent: var(--bsu-cardinal);
+  --accent-hover: var(--bsu-cardinal-deep);
+  /* Cardinal as TEXT. Full-strength cardinal only clears AA on light
+     surfaces, so this token lightens when the theme flips while the
+     cardinal FILL colour stays exact. */
+  --accent-text: var(--bsu-cardinal);
+  --accent-text-hover: var(--bsu-cardinal-deep);
+  --accent-soft: #fbeaed;
+  --focus-ring: var(--bsu-lake);
+
+  --error: #a3102a;
+  --warning: #8a4b00;
+  --manual: var(--bsu-lake);
+  --ok: #176b3a;
+
+  /* --- Type stacks --- */
+  /* IvyPresto Display is an Adobe face. Playfair Display is the closest
+     licensed-free stand-in: same vertical stress and ball terminals, but
+     sturdier hairlines, which is what Bodoni Moda got wrong on screen —
+     its strokes disappeared below ~28px and in dark mode. */
+  --serif: "IvyPresto Display", "Playfair Display", Didot, Georgia,
+    "Times New Roman", serif;
+  --sans: "Helvetica Neue LT Std", "Helvetica Neue", Helvetica, Inter,
+    "Segoe UI", Arial, sans-serif;
+  --condensed: "Acumin Pro ExtraCondensed", "Oswald", "Helvetica Neue Condensed",
+    "Arial Narrow", sans-serif;
+  --font-display: var(--serif);
+  --font-body: var(--sans);
+
+  /* --- Modular scale (Swiss grid, 4px base) --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  --gutter: clamp(1.25rem, 5vw, 4.5rem);
+  --measure: 68ch;
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgba(22, 24, 26, 0.06),
+    0 12px 28px -18px rgba(22, 24, 26, 0.45);
+  --shadow-lift: 0 2px 4px rgba(22, 24, 26, 0.08),
+    0 26px 48px -24px rgba(22, 24, 26, 0.5);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 140ms;
+  --dur: 220ms;
+}
+
+html.dark {
+  --ink: #f3f1ef;
+  --ink-soft: #cdc8c3;
+  --muted: #b3aeaa;
+  --paper: #141516;
+  --paper-alt: #1c1e20;
+  --panel: #202325;
+  --carbon: #0e0f10;
+  --line: #3c4043;
+  --line-strong: #52575b;
+
+  --accent: #e8445f;
+  --accent-hover: #f4788c;
+  --accent-text: #f4788c;
+  --accent-text-hover: #ffffff;
+  --accent-soft: #351119;
+  --focus-ring: var(--bsu-sky);
+
+  --error: #f08097;
+  --warning: #e0a95f;
+  --ok: #7bc496;
+  /* Lake is too dark to carry text on carbon; Sky is the cleared pairing. */
+  --manual: var(--bsu-sky);
+  color-scheme: dark;
+}
+
+/* The brand's visible focus treatment: a Lake ring on a white keyline so it
+   survives both the paper and the cardinal fields. */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

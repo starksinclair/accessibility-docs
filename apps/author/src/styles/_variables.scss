@@ -68,17 +68,18 @@
   --tt-gray-dark-900: rgba(245, 245, 245, 1);
 
   /* Brand colors */
-  --tt-brand-color-50: rgba(239, 238, 255, 1);
-  --tt-brand-color-100: rgba(222, 219, 255, 1);
-  --tt-brand-color-200: rgba(195, 189, 255, 1);
-  --tt-brand-color-300: rgba(157, 138, 255, 1);
-  --tt-brand-color-400: rgba(122, 82, 255, 1);
-  --tt-brand-color-500: rgba(98, 41, 255, 1);
-  --tt-brand-color-600: rgba(84, 0, 229, 1);
-  --tt-brand-color-700: rgba(75, 0, 204, 1);
-  --tt-brand-color-800: rgba(56, 0, 153, 1);
-  --tt-brand-color-900: rgba(43, 25, 102, 1);
-  --tt-brand-color-950: hsla(257, 100%, 9%, 1);
+  /* Ball State Cardinal scale (replaces TipTap purple defaults) */
+  --tt-brand-color-50: rgba(255, 241, 244, 1);
+  --tt-brand-color-100: rgba(255, 220, 227, 1);
+  --tt-brand-color-200: rgba(255, 180, 195, 1);
+  --tt-brand-color-300: rgba(244, 114, 141, 1);
+  --tt-brand-color-400: rgba(225, 29, 72, 1);
+  --tt-brand-color-500: rgba(186, 12, 47, 1);
+  --tt-brand-color-600: rgba(143, 9, 36, 1);
+  --tt-brand-color-700: rgba(120, 8, 30, 1);
+  --tt-brand-color-800: rgba(90, 6, 23, 1);
+  --tt-brand-color-900: rgba(64, 5, 17, 1);
+  --tt-brand-color-950: rgba(40, 3, 10, 1);
 
   /* Green */
   --tt-color-green-inc-5: hsla(129, 100%, 97%, 1);
@@ -121,7 +122,9 @@
 
   /* Basic colors */
   --white: rgba(255, 255, 255, 1);
-  --black: rgba(14, 14, 17, 1);
+  /* Brand carbon (the "Black" swatch as used on p.61) rather than
+     TipTap's blue-cast near-black. */
+  --black: rgba(28, 30, 32, 1);
   --transparent: rgba(255, 255, 255, 0);
 
   /****************** 
@@ -189,7 +192,8 @@
   --tt-sidebar-bg-color: var(--tt-gray-light-100);
   --tt-scrollbar-color: var(--tt-gray-light-a-200);
   --tt-cursor-color: var(--tt-brand-color-500);
-  --tt-selection-color: rgba(157, 138, 255, 0.2);
+  /* Was TipTap purple; selection now reads as Cardinal at 18%. */
+  --tt-selection-color: rgba(186, 12, 47, 0.18);
   --tt-card-bg-color: var(--white);
   --tt-card-border-color: var(--tt-gray-light-a-100);
 }
@@ -202,7 +206,8 @@
   --tt-sidebar-bg-color: var(--tt-gray-dark-100);
   --tt-scrollbar-color: var(--tt-gray-dark-a-200);
   --tt-cursor-color: var(--tt-brand-color-400);
-  --tt-selection-color: rgba(122, 82, 255, 0.2);
+  /* Sky reads better than Cardinal as a selection wash on carbon. */
+  --tt-selection-color: rgba(174, 219, 233, 0.26);
   --tt-card-bg-color: var(--tt-gray-dark-50);
   --tt-card-border-color: var(--tt-gray-dark-a-50);
 

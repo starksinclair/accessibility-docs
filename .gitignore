@@ -1,10 +1,13 @@
 node_modules/
 dist/
 apps/author/dist/
+apps/worker/.wrangler/
 packages/core/dist/
 .idea/
 .DS_Store
 .env
 .env.*
+.dev.vars
 *.log
 .vite/
+.wrangler/

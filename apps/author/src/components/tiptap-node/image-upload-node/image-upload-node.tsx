@@ -3,10 +3,25 @@
 import { useRef, useState } from "react"
 import type { NodeViewProps } from "@tiptap/react"
 import { NodeViewWrapper } from "@tiptap/react"
+import { AltTextDialog } from "@/components/AltTextDialog"
 import { Button } from "@/components/tiptap-ui-primitive/button"
 import { CloseIcon } from "@/components/tiptap-icons/close-icon"
 import "@/components/tiptap-node/image-upload-node/image-upload-node.scss"
 import { focusNextNode, isValidPosition } from "@/lib/tiptap-utils"
+
+type PendingAltImage = {
+  url: string
+  filename: string
+}
+
+type PendingAltSession = {
+  items: PendingAltImage[]
+  index: number
+  confirmed: Array<{
+    type: string
+    attrs: Record<string, string>
+  }>
+}
 
 export interface FileItem {
   /**
@@ -437,6 +452,7 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
   const { accept, limit, maxSize } = props.node.attrs
   const inputRef = useRef<HTMLInputElement>(null)
   const extension = props.extension
+  const [altSession, setAltSession] = useState<PendingAltSession | null>(null)
 
   const uploadOptions: UploadOptions = {
     maxSize,
@@ -450,44 +466,49 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
   const { fileItems, uploadFiles, removeFileItem, clearAllFiles } =
     useFileUpload(uploadOptions)
 
+  const insertConfirmed = (
+    confirmed: PendingAltSession["confirmed"]
+  ) => {
+    const pos = props.getPos()
+    if (!isValidPosition(pos) || confirmed.length === 0) {
+      clearAllFiles()
+      setAltSession(null)
+      return
+    }
+
+    props.editor
+      .chain()
+      .focus()
+      .deleteRange({ from: pos, to: pos + props.node.nodeSize })
+      .insertContentAt(pos, confirmed)
+      .run()
+
+    focusNextNode(props.editor)
+    setAltSession(null)
+  }
+
   const handleUpload = async (files: File[]) => {
     const urls = await uploadFiles(files)
 
-    if (urls.length > 0) {
-      const pos = props.getPos()
-
-      if (isValidPosition(pos)) {
-        const imageNodes = urls.map((url, index) => {
-          const filename =
-            files[index]?.name.replace(/\.[^/.]+$/, "") || "unknown"
-          const altTitle =
-            window.prompt("Alt title (short name for the image):", filename) ??
-            ""
-          const altDescription =
-            window.prompt("Alt description (what the image shows):", "") ?? ""
-          return {
-            type: extension.options.type,
-            attrs: {
-              src: url,
-              alt: altDescription,
-              altTitle,
-              altDescription,
-              title: altTitle || filename,
-            },
-          }
-        })
-
-        props.editor
-          .chain()
-          .focus()
-          .deleteRange({ from: pos, to: pos + props.node.nodeSize })
-          .insertContentAt(pos, imageNodes)
-          .run()
-
-        focusNextNode(props.editor)
-      }
+    if (urls.length === 0) {
+      return
     }
+
+    const items = urls.map((url, index) => ({
+      url,
+      filename: files[index]?.name.replace(/\.[^/.]+$/, "") || "unknown",
+    }))
+
+    setAltSession({
+      items,
+      index: 0,
+      confirmed: [],
+    })
   }
+
+  const currentPending = altSession?.items[altSession.index] ?? null
+  const pendingCount = altSession?.items.length ?? 0
+  const pendingIndex = (altSession?.index ?? 0) + 1
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -554,6 +575,66 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
         multiple={limit > 1}
         onChange={handleChange}
         onClick={(e: React.MouseEvent<HTMLInputElement>) => e.stopPropagation()}
+      />
+
+      <AltTextDialog
+        open={Boolean(currentPending)}
+        title={
+          pendingCount > 1
+            ? `Image accessibility text (${pendingIndex} of ${pendingCount})`
+            : "Image accessibility text"
+        }
+        previewSrc={currentPending?.url}
+        initial={{
+          altTitle: currentPending?.filename ?? "",
+          altDescription: "",
+        }}
+        confirmLabel={
+          altSession && altSession.index < altSession.items.length - 1
+            ? "Next image"
+            : "Insert image"
+        }
+        onCancel={() => {
+          if (!altSession) {
+            return
+          }
+          if (altSession.confirmed.length > 0) {
+            insertConfirmed(altSession.confirmed)
+            return
+          }
+          clearAllFiles()
+          setAltSession(null)
+        }}
+        onConfirm={(values) => {
+          if (!altSession || !currentPending) {
+            return
+          }
+
+          const nextConfirmed = [
+            ...altSession.confirmed,
+            {
+              type: extension.options.type,
+              attrs: {
+                src: currentPending.url,
+                alt: values.altDescription,
+                altTitle: values.altTitle,
+                altDescription: values.altDescription,
+                title: values.altTitle || currentPending.filename,
+              },
+            },
+          ]
+
+          if (altSession.index >= altSession.items.length - 1) {
+            insertConfirmed(nextConfirmed)
+            return
+          }
+
+          setAltSession({
+            items: altSession.items,
+            index: altSession.index + 1,
+            confirmed: nextConfirmed,
+          })
+        }}
       />
     </NodeViewWrapper>
   )

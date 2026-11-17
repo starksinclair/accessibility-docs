@@ -9,9 +9,15 @@ function buildDocumentModel(): DocumentModel {
 
   for (let i = 0; i < body.getNumChildren(); i++) {
     const element = body.getChild(i);
+    const type = element.getType();
+
+    if (type === DocumentApp.ElementType.TABLE) {
+      nodes.push(convertTable(element.asTable()));
+      continue;
+    }
 
     // Inline images live inside paragraphs, not as top-level body children.
-    if (element.getType() !== DocumentApp.ElementType.PARAGRAPH) {
+    if (type !== DocumentApp.ElementType.PARAGRAPH) {
       continue;
     }
 
@@ -34,11 +40,12 @@ function buildDocumentModel(): DocumentModel {
   return {
     documentName: doc.getName(),
     nodes,
+    source: "gdoc",
   };
 }
 
 function getInlineImages(
-    paragraph: GoogleAppsScript.Document.Paragraph
+  paragraph: GoogleAppsScript.Document.Paragraph
 ): FigureNode[] {
   const images: FigureNode[] = [];
 
@@ -50,11 +57,39 @@ function getInlineImages(
         type: "figure",
         altTitle: image.getAltTitle() ?? "",
         altDescription: image.getAltDescription() ?? "",
+        // Apps Script has no stable browser-style src; PDF export lives in the author app.
+        src: "",
+        width: image.getWidth() || null,
+        height: image.getHeight() || null,
       });
     }
   }
 
   return images;
+}
+
+function convertTable(table: GoogleAppsScript.Document.Table): TableNode {
+  const rows: TableRow[] = [];
+
+  for (let rowIndex = 0; rowIndex < table.getNumRows(); rowIndex++) {
+    const row = table.getRow(rowIndex);
+    const cells: TableCell[] = [];
+
+    for (let cellIndex = 0; cellIndex < row.getNumCells(); cellIndex++) {
+      const cell = row.getCell(cellIndex);
+      cells.push({
+        text: cell.getText().trim(),
+        // Google Docs does not expose a reliable header flag; treat first row as headers.
+        header: rowIndex === 0,
+        colspan: 1,
+        rowspan: 1,
+      });
+    }
+
+    rows.push({ cells });
+  }
+
+  return { type: "table", rows };
 }
 
 function convertParagraph(
@@ -63,8 +98,10 @@ function convertParagraph(
   const text = paragraph.getText().trim();
   const heading = paragraph.getHeading();
 
+  const formatting = getParagraphFormatting(paragraph);
+
   if (heading === DocumentApp.ParagraphHeading.TITLE) {
-    return { type: "title", text };
+    return { type: "title", text, formatting };
   }
 
   const headingLevel = getHeadingLevel(heading);
@@ -74,26 +111,32 @@ function convertParagraph(
       type: "heading",
       level: headingLevel,
       text,
+      formatting,
     };
   }
 
   return {
     type: "paragraph",
     text,
-    formatting: getParagraphFormatting(paragraph),
+    formatting,
   };
 }
 
 function getParagraphFormatting(
   paragraph: GoogleAppsScript.Document.Paragraph
-): {
-  bold: boolean;
-  fontSize: number | null;
-} {
+): TextFormatting {
+  const empty: TextFormatting = {
+    bold: false,
+    fontSize: null,
+    fontFamily: null,
+    color: null,
+    lineHeight: null,
+    textAlign: null,
+  };
   const textElement = paragraph.editAsText();
 
   if (textElement.getText().length === 0) {
-    return { bold: false, fontSize: null };
+    return empty;
   }
 
   const attributes = textElement.getAttributes(0);
@@ -101,8 +144,19 @@ function getParagraphFormatting(
   const fontSizeValue = attributes[DocumentApp.Attribute.FONT_SIZE];
   const fontSize =
     typeof fontSizeValue === "number" ? fontSizeValue : null;
+  const fontFamilyValue = attributes[DocumentApp.Attribute.FONT_FAMILY];
+  const fontFamily =
+    typeof fontFamilyValue === "string" ? fontFamilyValue : null;
+  const colorValue = attributes[DocumentApp.Attribute.FOREGROUND_COLOR];
+  const color = typeof colorValue === "string" ? colorValue : null;
 
-  return { bold, fontSize };
+  return {
+    ...empty,
+    bold,
+    fontSize,
+    fontFamily,
+    color,
+  };
 }
 
 function getHeadingLevel(

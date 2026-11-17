@@ -3,9 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Accessibility Author</title>
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/bsu-logo-vertical.png" />
+    <title>Accessibility Workbench · Ball State University</title>
+    <meta
+      name="description"
+      content="Ball State Accessibility Workbench: Checker, Author, and Workbench tools sharing one accessibility rules engine."
+    />
   </head>
   <body>
+    <script>
+      // Apply the stored theme before first paint so the page never flashes
+      // light then snaps to dark.
+      (function () {
+        try {
+          var p = localStorage.getItem("bsu-a11y-theme") || "system";
+          var dark =
+            p === "dark" ||
+            (p === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+          document.documentElement.style.colorScheme = dark ? "dark" : "light";
+          document.documentElement.dataset.themePreference = p;
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

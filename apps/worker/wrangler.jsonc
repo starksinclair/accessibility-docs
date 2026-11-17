@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "accessibility-workbench",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-17",
+  "assets": {
+    // Built React app from apps/author (FR-13.1)
+    "directory": "../author/dist",
+    "not_found_handling": "single-page-application",
+    // Only /api/* invokes the Worker; everything else is static SPA assets.
+    "run_worker_first": ["/api/*"]
+  }
+}

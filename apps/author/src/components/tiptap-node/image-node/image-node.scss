@@ -12,14 +12,54 @@
     display: inline-block;
   }
 
-  > img:not([data-type="emoji"] img) {
+  > img:not([data-type="emoji"] img),
+  [data-resize-container]:has(> img) {
     margin: 2rem 0;
     outline: 0.125rem solid transparent;
     border-radius: var(--tt-radius-xs, 0.25rem);
   }
 
-  img:not([data-type="emoji"] img).ProseMirror-selectednode {
+  img:not([data-type="emoji"] img).ProseMirror-selectednode,
+  [data-resize-container]:has(> img.ProseMirror-selectednode),
+  [data-resize-container][data-resize-state="true"] {
     outline-color: var(--tt-brand-color-500);
+  }
+
+  [data-resize-container] {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  [data-resize-wrapper] {
+    display: block;
+    max-width: 100%;
+    line-height: 0;
+  }
+
+  [data-resize-wrapper] > img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  [data-resize-handle] {
+    width: 0.75rem;
+    height: 0.75rem;
+    background: var(--tt-brand-color-500, #0d6efd);
+    border: 0.125rem solid #fff;
+    border-radius: 0.125rem;
+    box-sizing: border-box;
+    z-index: 2;
+  }
+
+  [data-resize-handle="bottom-right"] {
+    cursor: nwse-resize;
+    transform: translate(50%, 50%);
+  }
+
+  [data-resize-handle="bottom-left"] {
+    cursor: nesw-resize;
+    transform: translate(-50%, 50%);
   }
 
   // Thread image handling

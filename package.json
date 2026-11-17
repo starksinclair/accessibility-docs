@@ -9,12 +9,14 @@
     "apps/*"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run test -w @accessibility-docs/core",
     "build:core": "npm run build -w @accessibility-docs/core",
     "build:rules": "esbuild src/gas-rules-entry.ts --bundle --outfile=dist/Rules.js --format=iife --global-name=__a11yCore --footer:js=\"Object.assign(globalThis, __a11yCore);\"",
     "build": "npm run build:core && tsc && npm run build:rules && cp src/*.html dist/",
     "build:author": "npm run build:core && npm run build -w @accessibility-docs/author",
     "dev:author": "npm run build:core && npm run dev -w @accessibility-docs/author",
+    "dev:workbench": "npm run build:author && npm run dev -w @accessibility-docs/worker",
+    "deploy": "npm run build:author && npm run deploy -w @accessibility-docs/worker",
     "lint": "eslint src --max-warnings 0",
     "lint:fix": "eslint src --fix",
     "push": "npm run build && clasp push",
@@ -43,6 +45,7 @@
     "eslint": "^10.12.0",
     "globals": "^17.13.0",
     "typescript": "~5.9.0",
-    "typescript-eslint": "^8.71.2"
+    "typescript-eslint": "^8.71.2",
+    "wrangler": "^4.164.0"
   }
 }

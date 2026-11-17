@@ -6,19 +6,18 @@ Both tools are available now. No local install is required to use them.
 
 | Tool | Open it | How to use it |
 |------|---------|----------------|
+| **Hub** | Local: `npm run dev:author` then `/` · Deploy: Cloudflare Worker URL (after `npm run deploy`) | Landing page for all three tools |
 | **Checker** | [Accessibility Research Prototype](https://docs.google.com/document/d/1MJitDY4B4eKFei_fvgcy-C6Vwit8reCLoMXnKSyIZuY/edit) | Sign in to Google, open this document, then choose **Accessibility → Open checker**. The menu exists only in this document. The first run asks you to authorize the script. |
-| **Author** | [a11yeditor.netlify.app](https://a11yeditor.netlify.app/) | Write in the browser. **Check** runs the rules. **Save** downloads a new `.a11ydoc.json` file when there are no errors. It does not update a previous file, store the document in the cloud, or export PDF or Word. See [Current limitations](#current-limitations). |
+| **Author** | `/author` on the hub · interim: [a11yeditor.netlify.app](https://a11yeditor.netlify.app/) | Write in the browser. **Check** runs the rules. **Save** downloads a new `.a11ydoc.json` file when there are no errors. See [Current limitations](#current-limitations). |
+| **Workbench** | `/workbench` | Fix existing PPTX/PDF files (upload/ranking/fixes land after Milestone 1). |
 
-Research prototype for CS 499. It asks whether enforcing alt text, heading structure, and reading order as structural rules at authoring time produces scholarly documents with higher WCAG 2.2 Level AA compliance than documents written in Microsoft Word and exported as PDF.
-
-The project has two tools that share one rules engine:
+Research prototype for CS 499 / Ball State faculty document accessibility ahead of ADA Title II. Three tools share one rules engine in `@accessibility-docs/core`.
 
 | Tool | App | What it does |
 |------|-----|----------------|
 | **Checker** | Google Docs add-on (`src/`) | Audits an existing Google Doc and shows issues in a sidebar |
-| **Author** | React editor (`apps/author/`) | Lets you write, style text, and insert images. Save is blocked when error-severity rules fail |
-
-Both tools convert a document into the same `DocumentModel`, then run the same checks from `@accessibility-docs/core`.
+| **Author** | React editor (`apps/author/` → `/author`) | Lets you write, style text, and insert images. Save is blocked when error-severity rules fail |
+| **Workbench** | React app (`/workbench`) | Upload, rank, and fix existing course PowerPoints and PDFs |
 
 ```
 Google Docs  →  documentModel.ts  →  DocumentModel  ┐
@@ -31,19 +30,36 @@ TipTap editor →  tiptapToModel.ts →  DocumentModel  ┼→  runAccessibility
 ```text
 accessibility-docs/
 ├── packages/core/     Shared types, rules, and .a11ydoc.json format
-├── apps/author/       Tool B — TipTap authoring app
+├── apps/author/       Hub + Author + Workbench UI (Vite + React)
+├── apps/worker/       Cloudflare Worker (static SPA + /api/*)
 ├── src/               Tool A — Apps Script checker (clasp)
+├── docs/REQUIREMENTS.md
 └── dist/              Built Apps Script files that clasp pushes
 ```
 
 ## Rules
 
-| Code | Severity | Check |
-|------|----------|--------|
-| A001 | error | Document has a semantic title |
-| A002 | warning | Bold, large text is not marked as a heading |
-| A003 | warning | Image is missing an alt title |
-| A004 | error | Image is missing an alt description |
+| Code | Severity | Check | Applies to | Fixable |
+|------|----------|--------|------------|---------|
+| A001 | error | Document has a semantic title | all | auto |
+| A002 | warning | Bold, large text is not marked as a heading | all | manual-only |
+| A003 | warning | Image is missing an alt title | all | ai-assisted |
+| A004 | error | Image is missing an alt description | all | ai-assisted |
+| A005 | error | Heading has no text | all | manual-only |
+| A006 | warning | Heading levels skip (for example H1 → H3) | all | manual-only |
+| A007 | error | Image is missing a source file | all | manual-only |
+| A008 | warning | Document name is empty | all | auto |
+| A009 | warning | Longer document has no headings for navigation | all | manual-only |
+| A010 | error | Table has no rows/cells | all | manual-only |
+| A011 | error | Table has no header cells | all | auto |
+| A012 | warning | Table rows have inconsistent column counts | all | manual-only |
+| A013 | error | Slide has no title | pptx | ai-assisted |
+| A014 | warning | Two or more slides share the same title | pptx | ai-assisted |
+| A015 | error | Document language is not set | pdf | auto |
+| A016 | error | PDF is untagged (no structure tree) | pdf | manual-only |
+| A017 | error | PDF pages have no extractable text (likely scanned) | pdf | manual-only |
+
+Rules scoped to `pptx` or `pdf` run only when `DocumentModel.source` matches, so a Google Doc or an Author document never collects PowerPoint or PDF findings. Every rule also carries plain-language manual instructions — see `RULES` in `packages/core/src/ruleCatalog.ts`.
 
 `assertAccessible()` blocks a save only when `errorCount > 0`. Warnings are reported and do not block save.
 
@@ -97,12 +113,14 @@ npm install
 npm run dev:author
 ```
 
-Open the URL Vite prints (usually http://localhost:5173). Use **Check** to run the rules, or **Save** to download `.a11ydoc.json` when there are no errors. See [Current limitations](#current-limitations).
+Open the URL Vite prints (usually http://localhost:5173). The hub is `/`, Author is `/author`, Workbench is `/workbench`. See [Current limitations](#current-limitations).
 
-Production build:
+Production build / Cloudflare:
 
 ```bash
 npm run build:author
+npm run dev:workbench   # local Worker + built SPA
+npm run deploy          # Cloudflare Workers deploy
 ```
 
 ### Checker (Tool A)
@@ -124,6 +142,9 @@ Apps Script cannot import npm packages at runtime. `npm run build` bundles `@acc
 | Script | Purpose |
 |--------|---------|
 | `npm run build:core` | Compile the shared package |
+| `npm run build:author` | Build the React hub/author/workbench app |
+| `npm run dev:workbench` | Serve built SPA + Worker API locally |
+| `npm run deploy` | Deploy SPA + Worker to Cloudflare |
 | `npm run lint` | ESLint on the Apps Script `src/` tree |
 | `npm run lint:fix` | ESLint with auto-fix |
 

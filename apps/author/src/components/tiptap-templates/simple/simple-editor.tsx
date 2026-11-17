@@ -45,6 +45,7 @@ import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
 
 // --- Tiptap UI ---
 import { HeadingDropdownMenu } from "@/components/tiptap-ui/heading-dropdown-menu"
+import { AltTextDialog } from "@/components/AltTextDialog"
 import { ImageUploadButton } from "@/components/tiptap-ui/image-upload-button"
 import { ListDropdownMenu } from "@/components/tiptap-ui/list-dropdown-menu"
 import { BlockquoteButton } from "@/components/tiptap-ui/blockquote-button"
@@ -91,6 +92,8 @@ import { tiptapToModel } from "@/adapters/tiptapToModel"
 import { trySaveDocument } from "@/lib/saveDocument"
 import { compilePdf } from "@/compiler/compilePdf"
 import { ReportPanel } from "@/components/ReportPanel"
+import { BsuLogo } from "@/components/BrandMark"
+import { ThemeToggle as HeaderThemeToggle } from "@/components/ThemeToggle"
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
@@ -464,6 +467,54 @@ function HorizontalRuleButton() {
   )
 }
 
+function EditFigureAltButton() {
+  const { editor } = useTiptapEditor()
+  const [open, setOpen] = useState(false)
+  const active = editor?.isActive("figure") ?? false
+  const attrs = editor?.getAttributes("figure") ?? {}
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        tooltip="Edit image alt text"
+        aria-label="Edit image alt text"
+        data-disabled={!active}
+        disabled={!active}
+        data-active-state={active ? "on" : "off"}
+        onClick={() => setOpen(true)}
+      >
+        Alt
+      </Button>
+      <AltTextDialog
+        open={open && active}
+        title="Edit image accessibility text"
+        previewSrc={typeof attrs.src === "string" ? attrs.src : null}
+        initial={{
+          altTitle: String(attrs.altTitle ?? ""),
+          altDescription: String(attrs.altDescription ?? attrs.alt ?? ""),
+        }}
+        confirmLabel="Update alt text"
+        onCancel={() => setOpen(false)}
+        onConfirm={(values) => {
+          editor
+            ?.chain()
+            .focus()
+            .updateAttributes("figure", {
+              altTitle: values.altTitle,
+              altDescription: values.altDescription,
+              alt: values.altDescription,
+              title: values.altTitle || attrs.title || "",
+            })
+            .run()
+          setOpen(false)
+        }}
+      />
+    </>
+  )
+}
+
 const MainToolbarContent = ({
   onHighlighterClick,
   onNodeBackgroundClick,
@@ -566,6 +617,7 @@ const MainToolbarContent = ({
 
       <ToolbarGroup>
         <ImageUploadButton text="Add" />
+        <EditFigureAltButton />
         <HorizontalRuleButton />
         <TableSelect />
       </ToolbarGroup>
@@ -703,6 +755,13 @@ export function SimpleEditor() {
       Figure.configure({
         inline: false,
         allowBase64: true,
+        resize: {
+          enabled: true,
+          directions: ["bottom-right", "bottom-left"],
+          minWidth: 50,
+          minHeight: 50,
+          alwaysPreserveAspectRatio: true,
+        },
       }),
       TextStyleKit,
       TableKit.configure({
@@ -760,7 +819,7 @@ export function SimpleEditor() {
     publishReport(editor, result.report, !result.saved)
   }, [buildModel, documentName, editor, publishReport])
 
-  const downloadPdf = useCallback(() => {
+  const downloadPdf = useCallback(async () => {
     const model = buildModel()
     if (!model || !editor) {
       return
@@ -774,8 +833,10 @@ export function SimpleEditor() {
 
     const safeName =
       documentName.trim().replace(/[^\w\-]+/g, "-").toLowerCase() || "document"
-    const pdf = compilePdf(model)
-    const blob = new Blob([pdf], { type: "application/pdf" })
+    const pdf = await compilePdf(model)
+    const blob = new Blob([pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer], {
+      type: "application/pdf",
+    })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement("a")
     anchor.href = url
@@ -819,10 +880,13 @@ export function SimpleEditor() {
     <div className="author-layout">
       <header className="author-header">
         <div className="brand">
-          <span className="brand-mark">A11y</span>
+          <BsuLogo />
           <div>
+            <p className="author-eyebrow">Accessibility Workbench</p>
             <h1>Author</h1>
-            <p>Structured writing with compile-time accessibility checks</p>
+            <p className="author-tagline">
+              Structured writing with compile-time accessibility checks
+            </p>
           </div>
         </div>
         <div className="header-actions">
@@ -842,6 +906,7 @@ export function SimpleEditor() {
           <button type="button" className="primary" onClick={handleSave}>
             Save
           </button>
+          <HeaderThemeToggle />
         </div>
       </header>
 
