@@ -122,10 +122,13 @@ function checkDocumentTitle(
   }
 
   return [
+    // `nodeIndex` stays 0 because that is where a title belongs, and the Author
+    // editor marks that block. No `node` is passed: the first block is whatever
+    // happens to be first — in a deck, slide 1 — and borrowing its location
+    // would file a document-level finding against that slide.
     issue("A001", "Document does not contain a semantic title.", {
       help: "Apply a Title style to the document title.",
       nodeIndex: document.nodes.length > 0 ? 0 : undefined,
-      node: document.nodes[0],
     }),
   ];
 }

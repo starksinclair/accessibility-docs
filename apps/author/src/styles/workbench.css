@@ -1,0 +1,914 @@
+/**
+ * Workbench: upload and ranking.
+ *
+ * Same Ball State vocabulary as the hub — condensed caps for labels, one
+ * cardinal accent, a cardinal keyline on the card that matters — using the
+ * tokens from brand.css so light and dark both follow from one definition.
+ * Severity never relies on colour alone: every chip carries its word.
+ */
+
+.workbench {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+.route-banner-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.workbench-main {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 3.5rem) var(--gutter) var(--space-24);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.workbench-head h1 {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+
+.workbench-lede {
+  max-width: var(--measure);
+  margin: var(--space-4) 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+/* Section labels: the hub's condensed caps, used for the quieter headings. */
+.section-label {
+  margin: 0 0 var(--space-4);
+  font-family: var(--condensed);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.privacy-note {
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  border-left: 4px solid var(--bsu-lake);
+  background: var(--panel);
+  box-shadow: var(--shadow-card);
+  line-height: 1.55;
+  max-width: var(--measure);
+}
+
+/* ------------------------------------------------------------------ */
+/* Upload                                                              */
+/* ------------------------------------------------------------------ */
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  border: 2px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel);
+  transition: border-color var(--dur) var(--ease-out),
+    background var(--dur) var(--ease-out);
+}
+
+.dropzone-active {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-soft);
+}
+
+/* The input is hidden from sight but still the focusable control, so the
+   keyboard path is the real one; the ring is drawn on the label it points at. */
+.dropzone-input:focus-visible + .dropzone-cta {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.dropzone-cta {
+  cursor: pointer;
+}
+
+.dropzone-hint,
+.dropzone-limits {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  max-width: 48ch;
+}
+
+.dropzone-hint {
+  font-family: var(--condensed);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.upload-count,
+.working {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.working {
+  font-family: var(--condensed);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------ */
+/* Notices                                                             */
+/* ------------------------------------------------------------------ */
+
+.notice {
+  padding: var(--space-5);
+  border-left: 4px solid var(--error);
+  background: var(--panel);
+  box-shadow: var(--shadow-card);
+}
+
+.notice-list {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+  line-height: 1.55;
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  color: var(--accent-text-hover);
+}
+
+/* ------------------------------------------------------------------ */
+/* Ranking                                                             */
+/* ------------------------------------------------------------------ */
+
+.ranking-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.ranking-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ranking-explainer summary {
+  cursor: pointer;
+  font-family: var(--condensed);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.ranking-explainer summary:hover {
+  color: var(--accent-text-hover);
+}
+
+.ranking-explainer-body {
+  max-width: 54ch;
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border-left: 3px solid var(--line-strong);
+  background: var(--panel);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.ranking-explainer-body p {
+  margin: 0 0 var(--space-3);
+}
+
+.ranking-explainer-body p:last-child {
+  margin-bottom: 0;
+  color: var(--ink-soft);
+}
+
+.rank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-5);
+}
+
+.rank-card {
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line-strong);
+  background: var(--panel);
+  box-shadow: var(--shadow-card);
+}
+
+/* The one file to open first is the only one wearing the accent. */
+.rank-card-start {
+  border-left-color: var(--accent);
+  box-shadow: var(--shadow-lift);
+}
+
+.rank-top {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.rank-number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: var(--carbon);
+  color: var(--bsu-white);
+  font-family: var(--condensed);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.rank-identity {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rank-name {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.rank-facts {
+  margin: var(--space-1) 0 0;
+  font-family: var(--condensed);
+  font-size: 0.875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.start-here {
+  flex: none;
+  margin: 0;
+  padding: 0.3rem 0.6rem;
+  background: var(--bsu-cardinal);
+  color: var(--bsu-white);
+  font-family: var(--condensed);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rank-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: var(--space-3) var(--space-4);
+  margin: var(--space-5) 0 0;
+  padding: var(--space-4) 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.rank-counts dt {
+  font-family: var(--condensed);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.rank-counts dd {
+  margin: var(--space-1) 0 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.count-error {
+  color: var(--error);
+}
+
+.count-warning {
+  color: var(--warning);
+}
+
+.rank-blocker {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--error);
+  background: var(--paper-alt);
+  line-height: 1.55;
+}
+
+.rank-clean {
+  margin: var(--space-4) 0 0;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.rank-findings {
+  margin-top: var(--space-4);
+}
+
+.rank-findings summary {
+  cursor: pointer;
+  font-family: var(--condensed);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.rank-findings summary:hover {
+  color: var(--accent-text-hover);
+}
+
+.rank-status {
+  margin: var(--space-4) 0 0;
+  font-family: var(--condensed);
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------------ */
+/* Findings                                                            */
+/* ------------------------------------------------------------------ */
+
+.findings,
+.findings-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.findings {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.findings-where {
+  margin: 0 0 var(--space-2);
+  font-family: var(--condensed);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.findings-items {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.finding {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--line);
+}
+
+.sev {
+  flex: none;
+  min-width: 7.5rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid currentColor;
+  font-family: var(--condensed);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.sev-error {
+  color: var(--error);
+}
+
+.sev-warning {
+  color: var(--warning);
+}
+
+.sev-manual {
+  color: var(--manual);
+}
+
+.finding-body {
+  display: grid;
+  gap: var(--space-1);
+  line-height: 1.5;
+}
+
+.finding-meta {
+  font-family: var(--condensed);
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.finding-help {
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+/* ------------------------------------------------------------------ */
+/* Empty state                                                         */
+/* ------------------------------------------------------------------ */
+
+.empty {
+  max-width: var(--measure);
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.empty p {
+  margin: 0 0 var(--space-3);
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.empty p:last-child {
+  margin-bottom: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Viewer (FR-8)                                                       */
+/* ------------------------------------------------------------------ */
+
+/* The viewer needs the width; the triage page keeps its reading measure. */
+.workbench-main-viewer {
+  max-width: 96rem;
+}
+
+.viewer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 2px solid var(--line);
+}
+
+.viewer-title {
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.1;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.viewer-facts,
+.viewer-counter {
+  margin: var(--space-2) 0 0;
+  font-family: var(--condensed);
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.viewer-counter {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+
+.viewer-panes {
+  display: grid;
+  grid-template-columns: 13rem minmax(0, 1fr) 22rem;
+  gap: var(--space-6);
+  align-items: start;
+  margin-top: var(--space-6);
+}
+
+@media (max-width: 68rem) {
+  .viewer-panes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Slide map ---------------------------------------------------- */
+
+.slide-map {
+  position: sticky;
+  top: var(--space-4);
+  max-height: calc(100vh - var(--space-8));
+  overflow-y: auto;
+}
+
+.slide-map ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.slide-map-item {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.slide-map-item:hover {
+  border-color: var(--accent);
+}
+
+.slide-map-number {
+  display: grid;
+  place-items: center;
+  height: 1.5rem;
+  background: var(--carbon);
+  color: var(--bsu-white);
+  font-family: var(--condensed);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.slide-map-title {
+  font-size: 0.875rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slide-map-count {
+  min-width: 1.5rem;
+  font-family: var(--condensed);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--error);
+}
+
+/* --- Slide stack -------------------------------------------------- */
+
+.slide-stack {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.slide-stack-note {
+  margin: 0;
+  font-family: var(--condensed);
+  font-size: 0.875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.slide-card {
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-card);
+  scroll-margin-top: var(--space-4);
+}
+
+/* The slide is focused when an issue sends the reader to it, so it needs a
+   visible ring of its own. */
+.slide-card:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.slide-card-head {
+  display: grid;
+  gap: var(--space-1);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.slide-card-number,
+.slide-card-counts {
+  margin: 0;
+  font-family: var(--condensed);
+  font-size: 0.8125rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.slide-card-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.slide-card-untitled {
+  color: var(--error);
+  font-style: italic;
+  font-weight: 600;
+}
+
+.slide-card-body {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.slide-card-empty {
+  margin: var(--space-4) 0 0;
+  color: var(--ink-soft);
+}
+
+.slide-node {
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid transparent;
+  line-height: 1.6;
+}
+
+.slide-node-flagged {
+  border-left-color: var(--warning);
+}
+
+/* FR-8.6 — the element an issue points at, marked where it sits. */
+.slide-node-highlighted {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+  padding: var(--space-3);
+}
+
+.slide-image {
+  display: block;
+  max-width: 100%;
+  max-height: 16rem;
+  border: 1px solid var(--line);
+  background: var(--paper-alt);
+}
+
+.slide-image-missing {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--space-6);
+  border: 1px dashed var(--line-strong);
+  color: var(--muted);
+  font-family: var(--condensed);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.slide-alt {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.slide-alt-label {
+  font-family: var(--condensed);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.slide-alt-description {
+  display: block;
+  color: var(--ink-soft);
+}
+
+.slide-alt-missing {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.slide-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9375rem;
+}
+
+.slide-table caption {
+  margin-bottom: var(--space-2);
+  font-family: var(--condensed);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+}
+
+.slide-table th,
+.slide-table td {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.slide-table th {
+  background: var(--paper-alt);
+  font-family: var(--condensed);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* --- Issue pane --------------------------------------------------- */
+
+.issue-pane {
+  position: sticky;
+  top: var(--space-4);
+  max-height: calc(100vh - var(--space-8));
+  overflow-y: auto;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--bsu-cardinal);
+  background: var(--panel);
+}
+
+@media (max-width: 68rem) {
+  .issue-pane,
+  .slide-map {
+    position: static;
+    max-height: none;
+  }
+}
+
+.issue-pane-title {
+  margin: 0 0 var(--space-4);
+  font-family: var(--condensed);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sidebar-clean {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.issue-list ul {
+  list-style: none;
+  margin: 0 0 var(--space-5);
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.issue-group-label {
+  margin: 0 0 var(--space-2);
+  font-family: var(--condensed);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.issue {
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.issue-selected {
+  border-color: var(--accent);
+}
+
+.issue-skipped .issue-message {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.issue-button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.issue-button:hover {
+  background: var(--paper-alt);
+}
+
+/* The sidebar is a narrow column: the severity chip shrinks to fit it, and
+   sits at the top of its row rather than stretching down the message. */
+.issue-button .sev {
+  min-width: 5rem;
+  align-self: start;
+}
+
+.issue-text {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.issue-message {
+  line-height: 1.45;
+}
+
+.issue-meta {
+  font-family: var(--condensed);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.issue-detail {
+  padding: 0 var(--space-3) var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.issue-detail p {
+  margin: var(--space-3) 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.issue-detail-note {
+  color: var(--ink-soft);
+}
+
+.issue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.rank-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 0;
+}

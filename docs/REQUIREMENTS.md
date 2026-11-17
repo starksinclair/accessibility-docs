@@ -164,9 +164,10 @@ New workspace package `@accessibility-docs/formats`. Runtime dependencies allowe
 **PPTX reader `pptxToModel(file)`:**
 - FR-4.1 Unzip with JSZip, read `ppt/presentation.xml` for slide order, then each `ppt/slides/slideN.xml`.
 - FR-4.2 Per slide: title from the placeholder with `type="title"` or `type="ctrTitle"`; text runs; pictures (`p:pic`); tables (`a:tbl`, header row from `a:tblPr firstRow`).
-- FR-4.3 Picture alt fields map directly to the existing model: `p:cNvPr@title` is the alt title (A003) and `p:cNvPr@descr` is the alt description (A004).
+- FR-4.3 Picture alt fields map directly to the existing model: `p:cNvPr@title` is the alt title (A003) and `p:cNvPr@descr` is the alt description (A004). A picture PowerPoint has marked decorative (`adec:decorative`) is exempt from alt text, so it produces no figure node and no A003/A004.
 - FR-4.4 Document title from `docProps/core.xml` (`dc:title`).
 - FR-4.5 `location.bbox` from shape `a:off` and `a:ext` (EMU, convert to points: 1 pt = 12700 EMU).
+- FR-4.5a A non-empty slide title is also emitted as a `heading` node (level 2) beside the section marker's `title`. A slide title is how a deck is navigated, so this is the honest mapping, and without it A009 ("no headings to navigate by") would fire against every deck. Empty titles are not emitted as headings; A013 already reports them.
 - FR-4.6 Reject legacy `.ppt` with "Save as .pptx in PowerPoint, then upload again."
 
 **PDF reader `pdfToModel(file)`:**
@@ -195,7 +196,7 @@ Writers take the original file plus a list of approved fixes and return a new fi
 
 ### FR-6 Workbench: upload (P0)
 
-- FR-6.1 Multi-file picker for `.pptx` and `.pdf`. Max 50 MB per file, 30 files per batch (config).
+- FR-6.1 Multi-file picker for `.pptx` and `.pdf`. Max 50 MB per file, 30 files per batch (config). Until the PDF reader lands (FR-4.7), a `.pdf` is accepted by the picker and reported as "PDF reading is not ready yet" rather than silently ignored.
 - FR-6.2 Validate by file signature (ZIP for PPTX, `%PDF` for PDF), not only extension.
 - FR-6.3 Per-file status: reading, checking, ready, failed (with reason).
 - FR-6.4 Parse in a Web Worker so large files do not freeze the page.
@@ -211,19 +212,22 @@ Writers take the original file plus a list of approved fixes and return a new fi
 - FR-7.2 List sorted by priority, showing name, type, slide or page count, error and warning counts, and a "Start here" badge on the top file.
 - FR-7.3 (P1) Effort estimate: counts of auto, ai-assisted and manual-only issues.
 - FR-7.4 Weights in config; a "How is this ranked?" disclosure explains the formula.
+- FR-7.5 The scoring itself lives in `packages/core/src/ranking.ts`: it is pure arithmetic over an `AccessibilityReport` with no runtime dependencies (C-1 safe), and keeping it beside the rule catalog stops the weights drifting from the severities they weigh. `apps/author/src/config/workbench.ts` holds the upload limits and re-exports the weights, so there is still one place to change them.
 
 **Acceptance:** fixtures with known counts produce a deterministic order matching the formula.
 
 ### FR-8 Workbench: viewer and issue sidebar (P0)
 
 - FR-8.1 Selecting a file opens a two-pane view: document (main) and issue sidebar.
-- FR-8.2 PDF: render with pdf.js (or `react-pdf`).
+- FR-8.2 PDF: render with pdf.js (or `react-pdf`). Waiting on the PDF reader (FR-4.7); the viewer itself is format-agnostic, since it works from the outline (`buildOutline`), which groups a model by `section` marker whether those sections are slides or pages.
 - FR-8.3 PPTX: render slides in the browser. Evaluate a client-side PPTX renderer (for example `pptx-preview`) first. If fidelity is poor, use a **structure view** fallback: one card per slide showing its title, text, images (extracted from the zip) and tables. The structure view is acceptable for the demo.
-- FR-8.4 Thumbnails for navigation.
+- FR-8.3a **Decision (Milestone 4): structure view.** `pptx-preview` is maintained but pulls in `echarts` and `lodash`, and renders a deck as absolutely-positioned `div`s with no semantics — output that would have to be hidden from assistive technology, with the structure rebuilt beside it anyway, on a page that must itself meet WCAG 2.2 AA (NFR-1). The structure view shows exactly what the rules see, in real HTML: headings for slide titles, `img` plus its alt text, and tables with real `th` cells. Revisit only if open question 3 is answered by testing a renderer against three real decks.
+- FR-8.3b Images are extracted on demand, one file at a time (`extractPptxMedia`), rather than at upload: a batch of 30 decks is read and ranked up front, and only the file on screen needs its pictures in memory. The uploaded `File` handle is kept so the deck can be re-read without holding every upload's bytes.
+- FR-8.4 Thumbnails for navigation. With the structure view there is no rendered slide image to thumbnail, so the navigation rail is a **slide map**: slide number, title (or "No title") and its finding count, which is the information a person triaging a deck actually navigates by.
 - FR-8.5 Sidebar lists issues grouped by slide or page with severity, message and status (open, fixed, skipped).
 - FR-8.6 Clicking an issue scrolls to its slide or page. (P1: draw a highlight box from `location.bbox`.)
-- FR-8.7 Keyboard: arrow keys move between issues, Enter opens the fix panel, visible focus at all times.
-- FR-8.8 Live counter "12 of 31 issues fixed," announced through an ARIA live region.
+- FR-8.7 Keyboard: arrow keys move between issues, Enter opens the fix panel, visible focus at all times. Selecting an issue scrolls its slide into view but leaves focus in the issue list, otherwise the next arrow press has nowhere to go; the opened issue carries an explicit "Go to slide N" button for readers who want to land on the slide.
+- FR-8.8 Live counter "12 of 31 issues fixed," announced through an ARIA live region. Until the writers land (FR-5), the count of fixed issues is honestly 0; issues can be marked skipped, and the counter reports that too.
 
 ### FR-9 Workbench: fix panel and AI (P0)
 
@@ -301,7 +305,7 @@ One Worker serves both the React app and the API, so everything is same-origin (
 
 ## 7. Testing
 
-- T-1 Fixtures in `packages/formats/fixtures/<ruleCode>/fail/` and `/pass/` for every rule that applies to PPTX or PDF.
+- T-1 Fixtures in `packages/formats/fixtures/<ruleCode>/fail/` and `/pass/` for every rule that applies to PPTX or PDF. Rules that no PowerPoint file can produce through the reader (A005, A006, A010, A012) and those that need a damaged package (A007) get their fixtures with the writer round-trip tests instead; `packages/formats/fixtures/README.md` lists each gap and why. The fixtures are real PowerPoint packages, generated by `fixtures/generate.py` (python-pptx) and committed.
 - T-2 Reader tests: fixture → expected `DocumentModel` shape and issue codes.
 - T-3 Writer round-trip tests: fixture → apply fix → read again → issue gone.
 - T-4 Ranking test with known counts.

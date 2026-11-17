@@ -9,12 +9,13 @@
     "apps/*"
   ],
   "scripts": {
-    "test": "npm run test -w @accessibility-docs/core",
+    "test": "npm run build:core && npm run test -w @accessibility-docs/core && npm run test -w @accessibility-docs/formats",
     "build:core": "npm run build -w @accessibility-docs/core",
+    "build:formats": "npm run build -w @accessibility-docs/formats",
     "build:rules": "esbuild src/gas-rules-entry.ts --bundle --outfile=dist/Rules.js --format=iife --global-name=__a11yCore --footer:js=\"Object.assign(globalThis, __a11yCore);\"",
     "build": "npm run build:core && tsc && npm run build:rules && cp src/*.html dist/",
-    "build:author": "npm run build:core && npm run build -w @accessibility-docs/author",
-    "dev:author": "npm run build:core && npm run dev -w @accessibility-docs/author",
+    "build:author": "npm run build:core && npm run build:formats && npm run build -w @accessibility-docs/author",
+    "dev:author": "npm run build:core && npm run build:formats && npm run dev -w @accessibility-docs/author",
     "dev:workbench": "npm run build:author && npm run dev -w @accessibility-docs/worker",
     "deploy": "npm run build:author && npm run deploy -w @accessibility-docs/worker",
     "lint": "eslint src --max-warnings 0",

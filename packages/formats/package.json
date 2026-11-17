@@ -1,0 +1,34 @@
+{
+  "name": "@accessibility-docs/formats",
+  "version": "1.0.0",
+  "description": "Readers and writers that turn PPTX and PDF files into a DocumentModel (FR-4, FR-5)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "fixtures": "node scripts/build-fixtures.mjs"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@accessibility-docs/core": "*",
+    "fast-xml-parser": "^5.2.5",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.0",
+    "vitest": "^3.2.4"
+  }
+}
