@@ -246,4 +246,50 @@ describe("applyPdfFixes", () => {
       applyPdfFixes(new Uint8Array([0x50, 0x4b, 0x03, 0x04]), [])
     ).rejects.toThrow(/not a PDF/);
   });
+
+  /**
+   * FR-5.9 — the first row's `/TD` cells become `/TH`, which clears A011 when
+   * the file is read back.
+   */
+  it("promotes the first row of a table to header cells", async () => {
+    const original = await fixture("A011/fail/table-without-header-row.pdf");
+    const before = await pdfToModel(original, { fileName: "handout.pdf" });
+    const table = before.nodes.find((node) => node.type === "table");
+
+    expect(table?.sourceRef).toMatch(/^pdf:table#/);
+    expect(codes(runAccessibilityChecks(before))).toContain("A011");
+
+    const { model, report, applied } = await rewrite(
+      "A011/fail/table-without-header-row.pdf",
+      [{ kind: "table-header", sourceRef: table?.sourceRef ?? "" }]
+    );
+
+    expect(applied).toBe(1);
+    expect(codes(report)).not.toContain("A011");
+    expect(model.nodes.find((node) => node.type === "table")).toMatchObject({
+      rows: [
+        {
+          cells: [
+            { text: "Stage", header: true },
+            { text: "Location", header: true },
+          ],
+        },
+        {
+          cells: [
+            { text: "Light reactions", header: false },
+            { text: "Thylakoid", header: false },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("refuses a table-header fix on an untagged PDF", async () => {
+    const { applied, skipped } = await rewrite("A016/fail/untagged.pdf", [
+      { kind: "table-header", sourceRef: "pdf:table#page=1&ordinal=1" },
+    ]);
+
+    expect(applied).toBe(0);
+    expect(skipped[0].reason).toMatch(/needs full tagging/);
+  });
 });

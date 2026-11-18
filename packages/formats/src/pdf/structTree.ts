@@ -102,3 +102,41 @@ export function parseFigureRef(sourceRef: string): FigureRef | undefined {
     ? { page, mcid: value }
     : { page, ordinal: value };
 }
+
+/**
+ * Where a table sits, as an address the writer can resolve (FR-5.9).
+ *
+ * A table's own marked content is often empty — the MCIDs live on its cells —
+ * so the ordinal among the page's `Table` elements is the reliable key. An
+ * mcid is still recorded when present; the writer walks up from that cell to
+ * the enclosing `Table` when it has to.
+ */
+export function tableSourceRef(
+  page: number,
+  mcid: number | undefined,
+  ordinal: number
+): string {
+  return mcid === undefined
+    ? `pdf:table#page=${page}&ordinal=${ordinal}`
+    : `pdf:table#page=${page}&mcid=${mcid}`;
+}
+
+export interface TableRef {
+  page: number;
+  mcid?: number;
+  ordinal?: number;
+}
+
+export function parseTableRef(sourceRef: string): TableRef | undefined {
+  const match = /^pdf:table#page=(\d+)&(mcid|ordinal)=(\d+)$/.exec(sourceRef);
+  if (!match) {
+    return undefined;
+  }
+
+  const page = Number(match[1]);
+  const value = Number(match[3]);
+
+  return match[2] === "mcid"
+    ? { page, mcid: value }
+    : { page, ordinal: value };
+}

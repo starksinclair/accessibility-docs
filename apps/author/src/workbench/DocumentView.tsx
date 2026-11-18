@@ -10,6 +10,7 @@ import type {
   DocumentModel,
 } from "@accessibility-docs/core";
 import { FixPanel } from "./FixPanel";
+import { InlineEdit } from "./InlineEdit";
 import { IssueSidebar, type IssueState, type SidebarIssue } from "./IssueSidebar";
 import { SlideCard } from "./SlideCard";
 import type {
@@ -19,6 +20,7 @@ import type {
   MediaStatus,
 } from "./types";
 import type { ApplyResult } from "./useWorkbenchFiles";
+import { usePdfDocument } from "./usePdfDocument";
 
 interface DocumentViewProps {
   name: string;
@@ -28,6 +30,11 @@ interface DocumentViewProps {
   format: DocumentFormat;
   media: MediaMap;
   mediaStatus: MediaStatus;
+  /**
+   * Working-copy bytes for a PDF. When present, each page is rasterised above
+   * its structure list (FR-8.2a).
+   */
+  pdfBytes?: Uint8Array | null;
   /** How many fixes have been written into the working copy so far. */
   appliedCount: number;
   hasFixedCopy: boolean;
@@ -45,6 +52,7 @@ export function DocumentView({
   format,
   media,
   mediaStatus,
+  pdfBytes = null,
   appliedCount,
   hasFixedCopy,
   canUndo,
@@ -57,6 +65,9 @@ export function DocumentView({
     () => buildOutline(model, report),
     [model, report]
   );
+  const pdfState = usePdfDocument(format === "pdf" ? pdfBytes : null);
+  const pdfDocument =
+    pdfState.status === "ready" ? pdfState.document : null;
   const [statuses, setStatuses] = useState<Record<number, IssueState>>({});
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
@@ -252,23 +263,52 @@ export function DocumentView({
           role="region"
           aria-label={`${name} ${units}`}
         >
-          {outline.preamble.length > 0 || outline.sections.length === 0 ? (
+          {outline.sections.length === 0 ? (
             <p className="slide-stack-note">
-              {outline.sections.length === 0
-                ? `This file has no ${units} to show.`
-                : `Document title: ${model.documentName}`}
+              This file has no {units} to show.
             </p>
           ) : null}
 
-          {outline.sections.map((section) => (
-            <SlideCard
-              key={section.page}
-              section={section}
-              media={media}
-              mediaStatus={mediaStatus}
-              highlightedNodeIndex={selectedIssue?.nodeIndex}
+          <div className="document-meta">
+            <InlineEdit
+              label="Document title"
+              value={model.documentName}
+              placeholder="What should assistive technology announce for this file?"
+              note={
+                format === "pdf"
+                  ? "Shown in the title bar and announced when the file opens. You can change it even when one is already set."
+                  : "Announced when the file opens, and carried into a PDF export. You can change it even when one is already set."
+              }
+              onSave={(title) => applyFix({ kind: "document-title", title })}
             />
-          ))}
+          </div>
+
+          {pdfState.status === "failed" ? (
+            <p className="slide-stack-note" role="status">
+              {pdfState.reason}
+            </p>
+          ) : null}
+
+          {outline.sections.map((section) => {
+            const highlightBbox =
+              selectedIssue?.location?.page === section.page
+                ? selectedIssue.location.bbox
+                : undefined;
+
+            return (
+              <SlideCard
+                key={section.page}
+                section={section}
+                format={format}
+                media={media}
+                mediaStatus={mediaStatus}
+                highlightedNodeIndex={selectedIssue?.nodeIndex}
+                highlightBbox={highlightBbox}
+                pdfDocument={pdfDocument}
+                onApply={applyFix}
+              />
+            );
+          })}
         </div>
 
         <aside className="issue-pane" aria-labelledby="issue-pane-title">

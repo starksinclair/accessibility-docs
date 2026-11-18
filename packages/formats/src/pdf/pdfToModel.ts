@@ -31,7 +31,12 @@ import {
   type PdfOpenOptions,
 } from "./pdfjs.js";
 import type { StructNode } from "./structTree.js";
-import { figureSourceRef, isStructNode, mcidsOf } from "./structTree.js";
+import {
+  figureSourceRef,
+  isStructNode,
+  mcidsOf,
+  tableSourceRef,
+} from "./structTree.js";
 
 export interface PdfReadOptions extends PdfOpenOptions {
   /**
@@ -106,7 +111,7 @@ export async function pdfToModel(
       }
       tagged = true;
 
-      const reader = new PageStructureReader(page, text.byMcid);
+      const reader = new PageStructureReader(page, text.byMcid, text.bboxByMcid);
       const pageNodes = reader.read(structTree);
 
       // The first heading on a page is that page's own title, which is what
@@ -193,10 +198,18 @@ async function readStructTree(page: {
   return tree;
 }
 
+/** Axis-aligned box in PDF user space: [x0, y0, x1, y1]. */
+type PdfBBox = [number, number, number, number];
+
 interface PageText {
   hasText: boolean;
   /** Text of each marked-content id, including the text of its descendants. */
   byMcid: Map<number, string>;
+  /**
+   * Union of text-item boxes per marked-content id. Used when the structure
+   * tree does not declare a bbox of its own (FR-8.6).
+   */
+  bboxByMcid: Map<number, PdfBBox>;
 }
 
 /**
@@ -214,13 +227,14 @@ async function readPageText(page: {
   }) => Promise<{ items: unknown[] }>;
 }): Promise<PageText> {
   const byMcid = new Map<number, string>();
+  const bboxByMcid = new Map<number, PdfBBox>();
   let hasText = false;
 
   let items: unknown[];
   try {
     ({ items } = await page.getTextContent({ includeMarkedContent: true }));
   } catch {
-    return { hasText, byMcid };
+    return { hasText, byMcid, bboxByMcid };
   }
 
   const open: number[] = [];
@@ -231,6 +245,9 @@ async function readPageText(page: {
       id?: string;
       str?: string;
       hasEOL?: boolean;
+      transform?: number[];
+      width?: number;
+      height?: number;
     };
 
     if (entry.type === "beginMarkedContentProps" || entry.type === "beginMarkedContent") {
@@ -251,15 +268,50 @@ async function readPageText(page: {
       hasText = true;
     }
 
+    const itemBox = textItemBBox(entry);
+
     for (const mcid of open) {
       if (mcid < 0) {
         continue;
       }
       byMcid.set(mcid, (byMcid.get(mcid) ?? "") + entry.str);
+      if (itemBox) {
+        const prior = bboxByMcid.get(mcid);
+        bboxByMcid.set(mcid, prior ? unionBBox(prior, itemBox) : itemBox);
+      }
     }
   }
 
-  return { hasText, byMcid };
+  return { hasText, byMcid, bboxByMcid };
+}
+
+/** pdf.js text item → [x0, y0, x1, y1] in PDF user space. */
+function textItemBBox(entry: {
+  transform?: number[];
+  width?: number;
+  height?: number;
+}): PdfBBox | undefined {
+  const transform = entry.transform;
+  if (!transform || transform.length < 6) {
+    return undefined;
+  }
+  const x = transform[4];
+  const y = transform[5];
+  const width = typeof entry.width === "number" ? entry.width : 0;
+  const height = typeof entry.height === "number" ? entry.height : 0;
+  if (width <= 0 && height <= 0) {
+    return undefined;
+  }
+  return [x, y, x + Math.max(width, 0), y + Math.max(height, 0)];
+}
+
+function unionBBox(a: PdfBBox, b: PdfBBox): PdfBBox {
+  return [
+    Math.min(a[0], b[0]),
+    Math.min(a[1], b[1]),
+    Math.max(a[2], b[2]),
+    Math.max(a[3], b[3]),
+  ];
 }
 
 /** "p12_mc3" is marked-content id 3; a marker without an id is not one. */
@@ -278,10 +330,12 @@ function mcidOf(id: string | undefined): number {
 class PageStructureReader {
   private readonly nodes: DocumentNode[] = [];
   private figureIndex = 0;
+  private tableIndex = 0;
 
   constructor(
     private readonly page: number,
-    private readonly text: Map<number, string>
+    private readonly text: Map<number, string>,
+    private readonly bboxByMcid: Map<number, PdfBBox>
   ) {}
 
   read(root: StructNode): DocumentNode[] {
@@ -399,6 +453,7 @@ class PageStructureReader {
    * distinction A011 and A012 are about.
    */
   private pushTable(node: StructNode): void {
+    this.tableIndex += 1;
     const rows: TableRow[] = [];
 
     const collectRows = (current: StructNode): void => {
@@ -421,7 +476,12 @@ class PageStructureReader {
       type: "table",
       rows,
       location: this.locationOf(node),
-      sourceRef: this.structRef(node),
+      // FR-5.9 — the writer finds this table again by the same address.
+      sourceRef: tableSourceRef(
+        this.page,
+        mcidsOf(node)[0],
+        this.tableIndex
+      ),
     });
   }
 
@@ -463,12 +523,14 @@ class PageStructureReader {
 
   private locationOf(node: StructNode): NodeLocation {
     const location: NodeLocation = { page: this.page };
-    const bbox = node.bbox;
+    // Prefer a bbox the structure tree declared; otherwise union the text
+    // items tagged under this element so FR-8.6 still has something to draw.
+    const bbox = node.bbox ?? this.bboxFromContent(node);
 
     if (bbox) {
       // PDF user space, measured from the bottom-left of the page, unlike the
       // top-left points a PPTX shape reports. The viewer's highlight box
-      // (FR-8.6, P1) has to flip it against the page height.
+      // (FR-8.6) flips it against the page height.
       location.bbox = [
         round(bbox[0]),
         round(bbox[1]),
@@ -478,6 +540,18 @@ class PageStructureReader {
     }
 
     return location;
+  }
+
+  private bboxFromContent(node: StructNode): PdfBBox | undefined {
+    let union: PdfBBox | undefined;
+    for (const mcid of mcidsOf(node)) {
+      const box = this.bboxByMcid.get(mcid);
+      if (!box) {
+        continue;
+      }
+      union = union ? unionBBox(union, box) : box;
+    }
+    return union;
   }
 
   /**

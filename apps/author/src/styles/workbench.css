@@ -614,6 +614,45 @@
   color: var(--muted);
 }
 
+.document-meta {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.inline-edit {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.slide-card-head + .inline-edit,
+.document-meta .inline-edit {
+  margin-top: 0;
+}
+
+.inline-edit-label {
+  font-family: var(--condensed);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.inline-edit-note {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.inline-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .slide-card {
   padding: var(--space-5);
   border: 1px solid var(--line);
@@ -663,6 +702,79 @@
   display: grid;
   gap: var(--space-4);
   margin-top: var(--space-4);
+}
+
+/* FR-8.2a — raster of the PDF page above the structure list. */
+.pdf-page-preview {
+  margin-top: var(--space-4);
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: var(--paper-alt);
+}
+
+.pdf-page-frame,
+.slide-stage {
+  position: relative;
+  display: block;
+  max-width: 100%;
+}
+
+.pdf-page-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  vertical-align: top;
+}
+
+.pdf-page-preview-fallback {
+  margin: 0;
+  padding: var(--space-8) var(--space-4);
+  color: var(--muted);
+  font-family: var(--condensed);
+  font-size: 0.875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* FR-8.6 — PPTX has no slide raster, so the stage is a blank slide plane
+   that only appears when a selected issue carries a bbox. */
+.slide-stage {
+  margin-top: var(--space-4);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(45deg, var(--paper-alt) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--paper-alt) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--paper-alt) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--paper-alt) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-color: var(--panel);
+}
+
+.slide-stage-caption {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 1;
+  margin: 0;
+  padding: 0.15rem 0.4rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--condensed);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bbox-highlight {
+  position: absolute;
+  box-sizing: border-box;
+  border: 3px solid var(--bsu-cardinal);
+  background: color-mix(in srgb, var(--bsu-cardinal) 18%, transparent);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .slide-card-empty {

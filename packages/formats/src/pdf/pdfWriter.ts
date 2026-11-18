@@ -20,7 +20,7 @@ import { FormatReadError } from "../errors.js";
 import type { FileLike } from "../zip.js";
 import { toBytes } from "../zip.js";
 import { assertPdfSignature } from "./pdfjs.js";
-import { parseFigureRef } from "./structTree.js";
+import { parseFigureRef, parseTableRef } from "./structTree.js";
 
 export type PdfFix =
   /** FR-5.6 — the document title, plus "show it in the title bar". */
@@ -31,7 +31,12 @@ export type PdfFix =
    * FR-5.8 — `/Alt` on a figure's structure element. `sourceRef` is the
    * address the reader gave the figure (`pdf:figure#page=1&mcid=2`).
    */
-  | { kind: "alt-text"; sourceRef: string; description: string };
+  | { kind: "alt-text"; sourceRef: string; description: string }
+  /**
+   * FR-5.9 — turn the first row's `/TD` cells into `/TH`. `sourceRef` is the
+   * address the reader gave the table (`pdf:table#page=1&mcid=3`).
+   */
+  | { kind: "table-header"; sourceRef: string };
 
 export interface SkippedPdfFix {
   fix: PdfFix;
@@ -111,6 +116,8 @@ function applyOne(doc: PDFDocument, fix: PdfFix): FixOutcome {
       return setLanguage(doc, fix.language);
     case "alt-text":
       return setAltText(doc, fix.sourceRef, fix.description);
+    case "table-header":
+      return setTableHeader(doc, fix.sourceRef);
     default:
       return { ok: false, reason: "This kind of fix is not supported yet." };
   }
@@ -219,8 +226,78 @@ function setAltText(
   return { ok: true };
 }
 
+/**
+ * FR-5.9 — the first row's cells become `/TH` so assistive technology can
+ * announce the column each data cell belongs to.
+ */
+function setTableHeader(doc: PDFDocument, sourceRef: string): FixOutcome {
+  const target = parseTableRef(sourceRef);
+  if (!target) {
+    return { ok: false, reason: "This table's location could not be read." };
+  }
+
+  const structTreeRoot = lookupDict(
+    doc,
+    doc.catalog.get(PDFName.of("StructTreeRoot"))
+  );
+  if (!structTreeRoot) {
+    return { ok: false, reason: NEEDS_TAGGING };
+  }
+
+  let page: PDFPage;
+  try {
+    page = doc.getPage(target.page - 1);
+  } catch {
+    return { ok: false, reason: "That page is not in this PDF any more." };
+  }
+
+  const table =
+    target.mcid === undefined
+      ? elementByOrdinal(doc, structTreeRoot, page, "Table", target.ordinal ?? 1)
+      : tableFromMcid(doc, structTreeRoot, page, target.mcid);
+
+  if (!table) {
+    return {
+      ok: false,
+      reason:
+        "This table could not be found in the PDF's structure tree. Re-read the file and try again.",
+    };
+  }
+
+  const firstRow = firstTableRow(doc, table);
+  if (!firstRow) {
+    return { ok: false, reason: "This table has no rows to mark as headers." };
+  }
+
+  let changed = 0;
+  for (const kid of asList(doc, firstRow.get(PDFName.of("K")))) {
+    const cell = lookupDict(doc, kid);
+    if (!cell) {
+      continue;
+    }
+    const role = cell.get(PDFName.of("S"));
+    if (!(role instanceof PDFName)) {
+      continue;
+    }
+    if (role.asString() === "/TD") {
+      cell.set(PDFName.of("S"), PDFName.of("TH"));
+      changed += 1;
+    }
+  }
+
+  if (changed === 0) {
+    return {
+      ok: false,
+      reason:
+        "The first row has no data cells to promote. It may already be marked as a header.",
+    };
+  }
+
+  return { ok: true };
+}
+
 /** The structure element that owns a marked-content id on a page. */
-function figureByMcid(
+function elementByMcid(
   doc: PDFDocument,
   structTreeRoot: PDFDict,
   page: PDFPage,
@@ -249,14 +326,50 @@ function figureByMcid(
   return lookupDict(doc, entry.get(mcid));
 }
 
-/** The nth `Figure` on a page, in structure-tree order. */
-function figureByOrdinal(
+function figureByMcid(
   doc: PDFDocument,
   structTreeRoot: PDFDict,
   page: PDFPage,
+  mcid: number
+): PDFDict | undefined {
+  return elementByMcid(doc, structTreeRoot, page, mcid);
+}
+
+/**
+ * A table's MCIDs usually sit on its cells, not on the `Table` element. Walk
+ * up from the addressed cell (or row) until a `Table` is found.
+ */
+function tableFromMcid(
+  doc: PDFDocument,
+  structTreeRoot: PDFDict,
+  page: PDFPage,
+  mcid: number
+): PDFDict | undefined {
+  let current = elementByMcid(doc, structTreeRoot, page, mcid);
+  let depth = 0;
+
+  while (current && depth < 32) {
+    const role = current.get(PDFName.of("S"));
+    if (role instanceof PDFName && role.asString() === "/Table") {
+      return current;
+    }
+    current = lookupDict(doc, current.get(PDFName.of("P")));
+    depth += 1;
+  }
+
+  return undefined;
+}
+
+/** The nth element of a given role on a page, in structure-tree order. */
+function elementByOrdinal(
+  doc: PDFDocument,
+  structTreeRoot: PDFDict,
+  page: PDFPage,
+  roleName: string,
   ordinal: number
 ): PDFDict | undefined {
   const pageRef = page.ref;
+  const expected = `/${roleName}`;
   let seen = 0;
   let found: PDFDict | undefined;
 
@@ -265,20 +378,85 @@ function figureByOrdinal(
       return;
     }
     const role = element.get(PDFName.of("S"));
-    const owner = element.get(PDFName.of("Pg"));
-    if (
-      role instanceof PDFName &&
-      role.asString() === "/Figure" &&
-      isRefTo(owner, pageRef)
-    ) {
-      seen += 1;
-      if (seen === ordinal) {
-        found = element;
-      }
+    if (!(role instanceof PDFName) || role.asString() !== expected) {
+      return;
+    }
+    // Tables (and some other parents) often omit `/Pg`; the page is on a
+    // descendant cell instead. Figures usually declare it on themselves.
+    const owner =
+      element.get(PDFName.of("Pg")) ?? pageOfElement(doc, element);
+    if (!isRefTo(owner, pageRef)) {
+      return;
+    }
+    seen += 1;
+    if (seen === ordinal) {
+      found = element;
     }
   });
 
   return found;
+}
+
+/** First `/Pg` found on this element or under it. */
+function pageOfElement(
+  doc: PDFDocument,
+  element: PDFDict,
+  depth = 0
+): PDFObject | undefined {
+  if (depth > 16) {
+    return undefined;
+  }
+  const own = element.get(PDFName.of("Pg"));
+  if (own) {
+    return own;
+  }
+  for (const kid of asList(doc, element.get(PDFName.of("K")))) {
+    const child = lookupDict(doc, kid);
+    if (!child) {
+      continue;
+    }
+    const found = pageOfElement(doc, child, depth + 1);
+    if (found) {
+      return found;
+    }
+  }
+  return undefined;
+}
+
+/** The nth `Figure` on a page, in structure-tree order. */
+function figureByOrdinal(
+  doc: PDFDocument,
+  structTreeRoot: PDFDict,
+  page: PDFPage,
+  ordinal: number
+): PDFDict | undefined {
+  return elementByOrdinal(doc, structTreeRoot, page, "Figure", ordinal);
+}
+
+/** First `TR` under a table, walking through `THead` / `TBody` if needed. */
+function firstTableRow(doc: PDFDocument, table: PDFDict): PDFDict | undefined {
+  const visit = (node: PDFDict, depth: number): PDFDict | undefined => {
+    if (depth > 16) {
+      return undefined;
+    }
+    for (const kid of asList(doc, node.get(PDFName.of("K")))) {
+      const child = lookupDict(doc, kid);
+      if (!child) {
+        continue;
+      }
+      const role = child.get(PDFName.of("S"));
+      if (role instanceof PDFName && role.asString() === "/TR") {
+        return child;
+      }
+      const nested = visit(child, depth + 1);
+      if (nested) {
+        return nested;
+      }
+    }
+    return undefined;
+  };
+
+  return visit(table, 0);
 }
 
 function walkStructTree(

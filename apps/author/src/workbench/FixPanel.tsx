@@ -67,14 +67,10 @@ export function FixPanel(props: FixPanelProps) {
     case "A014":
       return <SlideTitleFix {...props} />;
     case "A011":
-      // FR-5.9 — turning a PDF's `/TD` cells into `/TH` is a P1 that has not
-      // landed, so for a PDF this is still the manual instruction rather than
-      // a button that would do nothing.
-      return props.format === "pdf" ? (
-        <ManualFallback {...props} />
-      ) : (
-        <TableHeaderFix {...props} />
-      );
+      // FR-5.9 — tagged PDFs get the same one-click first-row header fix as
+      // decks. Untagged files are refused by the writer with the FR-5.10
+      // message rather than a dead button here.
+      return <TableHeaderFix {...props} />;
     case "A001":
       return <DocumentTitleFix {...props} />;
     case "A015":
@@ -287,13 +283,20 @@ function AltTextFix({
           className="btn btn-primary btn-sm"
           disabled={busy || description.trim().length === 0}
           onClick={() =>
-            run(() =>
-              onApply({
+            run(() => {
+              const sourceRef = issue.sourceRef ?? figure?.sourceRef ?? "";
+              if (!sourceRef) {
+                setProblem(
+                  "This figure has no address in the file, so alt text cannot be written."
+                );
+                return Promise.resolve();
+              }
+              return onApply({
                 kind: "alt-text",
-                sourceRef: issue.sourceRef ?? "",
-                description,
-              })
-            )
+                sourceRef,
+                description: description.trim(),
+              });
+            })
           }
         >
           Apply
@@ -536,10 +539,13 @@ function DocumentTitleFix({
   onSkip,
 }: FixPanelProps) {
   const fieldId = useId();
-  const [title, setTitle] = useState(
-    model.documentName || fileName.replace(/\.(pptx|pdf)$/i, "")
-  );
+  const draft = model.documentName.trim() || fileName.replace(/\.(pptx|pdf)$/i, "");
+  const [title, setTitle] = useState(draft);
   const { busy, problem, run } = useApplyState();
+
+  useEffect(() => {
+    setTitle(draft);
+  }, [draft]);
 
   return (
     <div className="fix-panel">
@@ -552,6 +558,7 @@ function DocumentTitleFix({
         type="text"
         value={title}
         onChange={(event) => setTitle(event.target.value)}
+        placeholder="What should assistive technology announce for this file?"
       />
       <p className="fix-note">
         {format === "pdf"
@@ -567,7 +574,9 @@ function DocumentTitleFix({
           type="button"
           className="btn btn-primary btn-sm"
           disabled={busy || title.trim().length === 0}
-          onClick={() => run(() => onApply({ kind: "document-title", title }))}
+          onClick={() =>
+            run(() => onApply({ kind: "document-title", title: title.trim() }))
+          }
         >
           Apply
         </button>

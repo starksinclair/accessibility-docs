@@ -20,6 +20,7 @@ import {
 import { DocumentView } from "@/workbench/DocumentView";
 import { FileFindings } from "@/workbench/FileFindings";
 import type { WorkbenchFile } from "@/workbench/types";
+import { usePdfBytes } from "@/workbench/usePdfBytes";
 import { useWorkbenchFiles } from "@/workbench/useWorkbenchFiles";
 import "@/styles/hub.css";
 import "@/styles/workbench.css";
@@ -102,6 +103,7 @@ export function WorkbenchPage() {
   const openFile = files.find(
     (file) => file.id === openFileId && file.status === "ready"
   );
+  const pdfBytes = usePdfBytes(openFile ?? null);
 
   // The open file's images are read on demand, so a batch of 30 decks does not
   // hold every picture in memory (FR-8.3).
@@ -158,6 +160,7 @@ export function WorkbenchPage() {
             format={openFile.format ?? "pptx"}
             media={media}
             mediaStatus={mediaStatus}
+            pdfBytes={pdfBytes}
             appliedCount={openFile.appliedCount ?? 0}
             hasFixedCopy={openFile.fixed !== undefined}
             canUndo={canUndo(openFile.id)}
