@@ -2,8 +2,7 @@
  * The issue sidebar (FR-8.5 to FR-8.8): every finding, grouped by slide, with
  * its status, and keyboard movement between them.
  */
-import { useRef } from "react";
-import { getRuleMetadata } from "@accessibility-docs/core";
+import { useRef, type ReactNode } from "react";
 import type {
   AccessibilityIssue,
   DocumentOutline,
@@ -39,6 +38,8 @@ interface IssueSidebarProps {
   onSelect: (issue: SidebarIssue) => void;
   onSetStatus: (index: number, state: IssueState) => void;
   indexOf: (issue: AccessibilityIssue) => number;
+  /** The fix panel for the open issue (FR-9); the sidebar just gives it room. */
+  renderFixPanel: (row: SidebarIssue) => ReactNode;
 }
 
 /** Issues in reading order: whole-file findings first, then slide by slide. */
@@ -68,6 +69,7 @@ export function IssueSidebar({
   onSelect,
   onSetStatus,
   indexOf,
+  renderFixPanel,
 }: IssueSidebarProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const rows = sidebarIssues(outline, indexOf);
@@ -147,7 +149,6 @@ export function IssueSidebar({
           <ul>
             {group.rows.map((row) => {
               const state = statuses[row.index] ?? "open";
-              const rule = getRuleMetadata(row.issue.code);
               const selected = selectedIndex === row.index;
 
               return (
@@ -177,12 +178,7 @@ export function IssueSidebar({
 
                   {selected ? (
                     <div className="issue-detail">
-                      {rule ? <p>{rule.manualFix}</p> : null}
-                      <p className="issue-detail-note">
-                        Applying this fix to the file arrives in the next
-                        milestone. For now you can mark it so you know where you
-                        stopped.
-                      </p>
+                      {renderFixPanel(row)}
                       <div className="issue-actions">
                         {row.page !== null ? (
                           <button
@@ -203,15 +199,7 @@ export function IssueSidebar({
                           >
                             Reopen
                           </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => onSetStatus(row.index, "skipped")}
-                          >
-                            Skip
-                          </button>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   ) : null}

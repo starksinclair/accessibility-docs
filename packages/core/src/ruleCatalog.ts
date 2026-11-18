@@ -30,6 +30,16 @@ export interface RuleMetadata {
  * Severities for A001 to A012 are fixed by C-4 and must not drift; a unit test
  * pins them. New rules get new codes (A013 onward).
  */
+/**
+ * Codes that existed and were withdrawn. They are never reissued: a report
+ * saved before the change still names them, and a reader should be able to
+ * look one up and find out what happened to it.
+ */
+export const RETIRED_RULES: Record<string, string> = {
+  A003:
+    "Withdrawn. It asked for an image \"alt title\", which no WCAG success criterion requires — SC 1.1.1 asks for one text alternative, which is A004. PowerPoint 365 no longer exposes the field at all, so the instruction could not be followed.",
+};
+
 export const RULES: Record<string, RuleMetadata> = {
   A001: {
     code: "A001",
@@ -47,15 +57,6 @@ export const RULES: Record<string, RuleMetadata> = {
     fixable: "manual-only",
     manualFix:
       "Decide whether this line really is a section heading. If it is, apply the matching Heading style instead of bold text. If it is not, leave it as it is.",
-    appliesTo: "all",
-  },
-  A003: {
-    code: "A003",
-    severity: "warning",
-    title: "Image has no alt title",
-    fixable: "ai-assisted",
-    manualFix:
-      "Open the image's alt text settings and add a short title that names the image in a few words.",
     appliesTo: "all",
   },
   A004: {
@@ -144,8 +145,13 @@ export const RULES: Record<string, RuleMetadata> = {
   A013: {
     code: "A013",
     severity: "error",
+    // The tool writes the title into the deck, including adding a title
+    // placeholder to a slide that has none (FR-5.2, FR-5.5). This is the
+    // capability the project exists to add: Panorama can only tell a lecturer
+    // to do it by hand. AI proposes better wording, but a fix never waits on
+    // it — the slide's own text gives a first draft.
+    fixable: "auto",
     title: "Slide has no title",
-    fixable: "ai-assisted",
     manualFix:
       "In PowerPoint, open the Outline view or the slide layout and put text in the slide's title placeholder. Titles are how a screen reader user moves between slides.",
     appliesTo: "pptx",

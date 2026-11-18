@@ -240,7 +240,7 @@ function checkHeadingLevelOrder(
   return issues;
 }
 
-/** A003 / A004 — Images must have alt text (PDF1). */
+/** A004 — Images must have a text alternative (SC 1.1.1, PDF1). */
 function checkImagesHaveAltText(
   document: DocumentModel
 ): AccessibilityIssue[] {
@@ -250,16 +250,6 @@ function checkImagesHaveAltText(
     const node = document.nodes[nodeIndex];
     if (node.type !== "figure") {
       continue;
-    }
-
-    if (node.altTitle.trim().length === 0) {
-      issues.push(
-        issue("A003", "Image does not have an alt title.", {
-          help: "Add a short alt title that names the image.",
-          nodeIndex,
-          node,
-        })
-      );
     }
 
     if (node.altDescription.trim().length === 0) {

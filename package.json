@@ -9,7 +9,7 @@
     "apps/*"
   ],
   "scripts": {
-    "test": "npm run build:core && npm run test -w @accessibility-docs/core && npm run test -w @accessibility-docs/formats",
+    "test": "npm run build:core && npm run test -w @accessibility-docs/core && npm run test -w @accessibility-docs/formats && npm run test -w @accessibility-docs/worker",
     "build:core": "npm run build -w @accessibility-docs/core",
     "build:formats": "npm run build -w @accessibility-docs/formats",
     "build:rules": "esbuild src/gas-rules-entry.ts --bundle --outfile=dist/Rules.js --format=iife --global-name=__a11yCore --footer:js=\"Object.assign(globalThis, __a11yCore);\"",

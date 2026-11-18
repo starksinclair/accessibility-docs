@@ -17,5 +17,8 @@ export { sniffFormat } from "./sniff.js";
 export type { PptxReadOptions } from "./pptx/pptxToModel.js";
 export { pptxToModel } from "./pptx/pptxToModel.js";
 
+export type { PptxFix, PptxWriteResult, SkippedFix } from "./pptx/pptxWriter.js";
+export { applyPptxFixes } from "./pptx/pptxWriter.js";
+
 export type { SlideImage } from "./pptx/media.js";
 export { extractPptxMedia } from "./pptx/media.js";

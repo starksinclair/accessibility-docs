@@ -457,8 +457,9 @@ function alignmentOf(
 
 /**
  * FR-4.3 — a picture's alt fields map straight onto the existing figure node:
- * `p:cNvPr@title` is the alt title (A003) and `@descr` the alt description
- * (A004).
+ * `@descr` is the alt description (A004). `@title` is a legacy field that no
+ * rule checks any more (A003 was withdrawn); it is still read, so the writer
+ * can put it back untouched.
  */
 function readPicture(
   shape: XmlNode,
@@ -467,7 +468,7 @@ function readPicture(
   const properties = nonVisualProperties(shape);
 
   // A picture PowerPoint has marked decorative is exempt from alt text, so
-  // reporting A003/A004 on it would be a false finding.
+  // reporting A004 on it would be a false finding.
   if (isDecorative(properties)) {
     return undefined;
   }

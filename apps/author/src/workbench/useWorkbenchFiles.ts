@@ -7,6 +7,7 @@
  * them, which is the privacy promise the page makes (FR-6.5).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { PptxFix, SkippedFix } from "@accessibility-docs/formats";
 import { uploadLimits } from "@/config/workbench";
 import type {
   MediaMap,
@@ -15,6 +16,9 @@ import type {
   WorkerRequest,
   WorkerResponse,
 } from "./types";
+
+/** How many Applies can be stepped back; each entry holds a whole deck. */
+const UNDO_DEPTH = 10;
 
 let sequence = 0;
 
@@ -28,6 +32,13 @@ function extensionOf(name: string): string {
   return dot === -1 ? "" : name.slice(dot + 1).toLowerCase();
 }
 
+/** What one Apply did, for the message the panel shows afterwards. */
+export interface ApplyResult {
+  applied: number;
+  skipped: SkippedFix[];
+  notes: string[];
+}
+
 export interface AddFilesResult {
   /** Reasons a file was turned away before it reached the worker. */
   rejected: { name: string; reason: string }[];
@@ -37,6 +48,17 @@ export function useWorkbenchFiles() {
   const [files, setFiles] = useState<WorkbenchFile[]>([]);
   const [media, setMedia] = useState<MediaMap>({});
   const [mediaStatus, setMediaStatus] = useState<MediaStatus>("idle");
+
+  /**
+   * Undo is session-only and in memory (FR-9.6): each entry is the file's
+   * state before one Apply. The depth is capped because every entry holds a
+   * whole deck.
+   */
+  const undoRef = useRef<Map<string, WorkbenchFile[]>>(new Map());
+  /** Resolvers for the Apply currently in flight, keyed by file. */
+  const applyWaitersRef = useRef<Map<string, (result: ApplyResult) => void>>(
+    new Map()
+  );
 
   const workerRef = useRef<Worker | null>(null);
   /** Which file the images in `media` belong to. */
@@ -56,6 +78,49 @@ export function useWorkbenchFiles() {
 
   const handleResponse = useCallback(
     (response: WorkerResponse) => {
+      if (response.kind === "apply") {
+        const waiter = applyWaitersRef.current.get(response.id);
+        applyWaitersRef.current.delete(response.id);
+
+        if (!response.ok) {
+          waiter?.({
+            applied: 0,
+            skipped: [],
+            notes: [],
+          });
+          setFiles((current) =>
+            current.map((file) =>
+              file.id === response.id
+                ? { ...file, reason: response.reason }
+                : file
+            )
+          );
+          return;
+        }
+
+        setFiles((current) =>
+          current.map((file) =>
+            file.id === response.id
+              ? {
+                  ...file,
+                  model: response.model,
+                  report: response.report,
+                  fixed: new Uint8Array(response.bytes),
+                  appliedCount: (file.appliedCount ?? 0) + response.applied,
+                  reason: undefined,
+                }
+              : file
+          )
+        );
+
+        waiter?.({
+          applied: response.applied,
+          skipped: response.skipped,
+          notes: response.notes,
+        });
+        return;
+      }
+
       if (response.kind === "media") {
         // A second file may have been opened while this one was unzipping.
         if (mediaOwnerRef.current !== response.id) {
@@ -248,11 +313,94 @@ export function useWorkbenchFiles() {
     [files, getWorker, releaseMedia]
   );
 
+  /**
+   * FR-9.6, FR-9.7 — writes approved fixes into the working copy, then
+   * re-reads and re-checks it. Each call starts from the current working copy,
+   * so fixes accumulate.
+   */
+  const applyFixes = useCallback(
+    async (id: string, fixes: PptxFix[]): Promise<ApplyResult> => {
+      const entry = files.find((file) => file.id === id);
+      if (!entry || fixes.length === 0) {
+        return { applied: 0, skipped: [], notes: [] };
+      }
+
+      const history = undoRef.current.get(id) ?? [];
+      undoRef.current.set(id, [...history, entry].slice(-UNDO_DEPTH));
+
+      const source = entry.fixed
+        ? entry.fixed.slice().buffer
+        : await entry.file.arrayBuffer();
+
+      const result = new Promise<ApplyResult>((resolve) => {
+        applyWaitersRef.current.set(id, resolve);
+      });
+
+      const request: WorkerRequest = {
+        kind: "apply",
+        id,
+        name: entry.name,
+        bytes: source as ArrayBuffer,
+        fixes,
+      };
+      getWorker().postMessage(request, [source as ArrayBuffer]);
+
+      return result;
+    },
+    [files, getWorker]
+  );
+
+  /** FR-9.6 — step back one Apply, for this session only. */
+  const undoLastFix = useCallback((id: string) => {
+    const history = undoRef.current.get(id);
+    const previous = history?.pop();
+    if (!previous) {
+      return;
+    }
+    undoRef.current.set(id, history ?? []);
+    setFiles((current) =>
+      current.map((file) => (file.id === id ? previous : file))
+    );
+  }, []);
+
+  const canUndo = useCallback(
+    (id: string) => (undoRef.current.get(id)?.length ?? 0) > 0,
+    []
+  );
+
+  /** FR-11.1 — "<original>-accessible.pptx". */
+  const downloadFixed = useCallback(
+    (id: string) => {
+      const entry = files.find((file) => file.id === id);
+      if (!entry?.fixed) {
+        return;
+      }
+
+      const base = entry.name.replace(/\.pptx$/i, "");
+      const url = URL.createObjectURL(
+        new Blob([entry.fixed.slice()], {
+          type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        })
+      );
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${base}-accessible.pptx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      // The blob is only needed until the download starts.
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    },
+    [files]
+  );
+
   const removeFile = useCallback(
     (id: string) => {
       if (mediaOwnerRef.current === id) {
         releaseMedia();
       }
+      undoRef.current.delete(id);
       setFiles((current) => current.filter((file) => file.id !== id));
     },
     [releaseMedia]
@@ -260,6 +408,7 @@ export function useWorkbenchFiles() {
 
   const clearAll = useCallback(() => {
     releaseMedia();
+    undoRef.current.clear();
     setFiles([]);
   }, [releaseMedia]);
 
@@ -268,8 +417,12 @@ export function useWorkbenchFiles() {
     media,
     mediaStatus,
     addFiles,
+    applyFixes,
+    canUndo,
+    downloadFixed,
     loadMedia,
     removeFile,
+    undoLastFix,
     clearAll,
   };
 }

@@ -46,8 +46,8 @@ describe("scoreReport", () => {
   });
 
   it("scores 10 per error and 3 per warning", () => {
-    // A004 and A013 are errors; A003 and A014 are warnings.
-    const score = scoreReport(reportOf("A004", "A013", "A003", "A014"));
+    // A004 and A013 are errors; A002 and A014 are warnings.
+    const score = scoreReport(reportOf("A004", "A013", "A002", "A014"));
 
     expect(score.errorCount).toBe(2);
     expect(score.warningCount).toBe(2);
@@ -76,7 +76,7 @@ describe("scoreReport", () => {
   });
 
   it("honours overridden weights (FR-7.4)", () => {
-    const score = scoreReport(reportOf("A004", "A003"), {
+    const score = scoreReport(reportOf("A004", "A002"), {
       errorWeight: 1,
       warningWeight: 1,
       blockerBonus: 0,
@@ -101,7 +101,7 @@ describe("scoreReport", () => {
 describe("rankDocuments", () => {
   it("sorts highest priority first and numbers the ranks", () => {
     const ranked = rankDocuments([
-      { id: "syllabus.pptx", report: reportOf("A003") },
+      { id: "syllabus.pptx", report: reportOf("A002") },
       { id: "scan.pdf", report: reportOf("A017") },
       { id: "lab.pptx", report: reportOf("A004", "A013") },
       { id: "clean.pptx", report: reportOf() },
@@ -119,7 +119,7 @@ describe("rankDocuments", () => {
   it("marks only the top file as the place to start (FR-7.2)", () => {
     const ranked = rankDocuments([
       { id: "a.pptx", report: reportOf("A004") },
-      { id: "b.pptx", report: reportOf("A003") },
+      { id: "b.pptx", report: reportOf("A002") },
     ]);
 
     expect(ranked.map((entry) => entry.startHere)).toEqual([true, false]);
@@ -155,7 +155,7 @@ describe("rankDocuments", () => {
     // urgent than three errors.
     const ranked = rankDocuments([
       // 0 errors, 10 warnings = 30
-      { id: "warnings.pptx", report: reportOf(...Array(10).fill("A003")) },
+      { id: "warnings.pptx", report: reportOf(...Array(10).fill("A002")) },
       // 3 errors, 0 warnings = 30
       { id: "errors.pptx", report: reportOf("A004", "A004", "A004") },
     ]);

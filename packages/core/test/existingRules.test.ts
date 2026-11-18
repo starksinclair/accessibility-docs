@@ -28,7 +28,8 @@ describe("C-4 — existing rule severities are frozen", () => {
   const frozen: Record<string, "error" | "warning"> = {
     A001: "error",
     A002: "warning",
-    A003: "warning",
+    // A003 was withdrawn: see RETIRED_RULES. The remaining codes keep their
+    // severities, which is what C-4 is protecting.
     A004: "error",
     A005: "error",
     A006: "warning",
@@ -83,14 +84,7 @@ describe("A002 — bold, large text that is not a heading", () => {
   });
 });
 
-describe("A003 / A004 — image alt text", () => {
-  it("reports a missing alt title as a warning", () => {
-    const model = doc([title("W"), figure({ altTitle: "" })]);
-    const issues = only(model, "A003");
-    expect(issues).toHaveLength(1);
-    expect(issues[0].severity).toBe("warning");
-  });
-
+describe("A004 — image alt text", () => {
   it("reports a missing alt description as an error", () => {
     const model = doc([title("W"), figure({ altDescription: "" })]);
     const issues = only(model, "A004");
@@ -100,8 +94,14 @@ describe("A003 / A004 — image alt text", () => {
 
   it("passes a fully described image", () => {
     const model = doc([title("W"), figure()]);
-    expect(only(model, "A003")).toHaveLength(0);
     expect(only(model, "A004")).toHaveLength(0);
+  });
+
+  it("no longer reports a missing alt title", () => {
+    // A003 was withdrawn: no WCAG success criterion asks for a second,
+    // shorter alternative, and PowerPoint 365 does not expose the field.
+    const model = doc([title("W"), figure({ altTitle: "" })]);
+    expect(runAccessibilityChecks(model).issues).toEqual([]);
   });
 });
 
@@ -238,7 +238,9 @@ describe("A010 / A011 / A012 — tables", () => {
 
 describe("assertAccessible", () => {
   it("blocks only on errors", () => {
-    const warningOnly = doc([title("W"), figure({ altTitle: "" })]);
+    const warningOnly = doc([title("W"), paragraph("Heading-ish", {
+      formatting: { ...defaultTextFormatting(), bold: true, fontSize: 18 },
+    })]);
     const result = assertAccessible(warningOnly);
 
     expect(result.ok).toBe(true);

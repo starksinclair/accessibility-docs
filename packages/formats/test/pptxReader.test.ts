@@ -109,14 +109,18 @@ describe("pptxToModel", () => {
   });
 
   it("leaves a missing alt field empty so the rules can see it", async () => {
-    const model = await readFixture("A003", "fail", "image-without-alt-title");
+    const model = await readFixture(
+      "A004",
+      "fail",
+      "image-without-alt-description"
+    );
     const figure = model.nodes.find((node) => node.type === "figure");
 
     expect(figure).toMatchObject({
-      altTitle: "",
-      altDescription: "Diagram of the cell cycle.",
+      altTitle: "Cell cycle diagram",
+      altDescription: "",
     });
-    expect(codes(runAccessibilityChecks(model))).toEqual(["A003"]);
+    expect(codes(runAccessibilityChecks(model))).toEqual(["A004"]);
   });
 
   it("converts shape geometry from EMU to points (FR-4.5)", async () => {
@@ -130,7 +134,11 @@ describe("pptxToModel", () => {
   });
 
   it("points sourceRef at the slide part and shape id (FR-2.1)", async () => {
-    const model = await readFixture("A003", "fail", "image-without-alt-title");
+    const model = await readFixture(
+      "A004",
+      "fail",
+      "image-without-alt-description"
+    );
     const figure = model.nodes.find((node) => node.type === "figure");
 
     expect(figure?.sourceRef).toMatch(/^ppt\/slides\/slide1\.xml#\d+$/);

@@ -7,6 +7,7 @@
  */
 import { runAccessibilityChecks } from "@accessibility-docs/core";
 import {
+  applyPptxFixes,
   extractPptxMedia,
   FormatReadError,
   pptxToModel,
@@ -47,6 +48,28 @@ async function handle(request: WorkerRequest): Promise<WorkerResponse> {
   }
 
   try {
+    if (request.kind === "apply") {
+      const result = await applyPptxFixes(bytes, request.fixes);
+      // FR-9.7 — the working copy is re-read and re-checked, so the score the
+      // user sees is the score of the file they would download, not a guess
+      // at what the fix did.
+      const fixedModel = await pptxToModel(result.bytes, {
+        fileName: request.name,
+      });
+
+      return {
+        kind: "apply",
+        id: request.id,
+        ok: true,
+        bytes: result.bytes.buffer as ArrayBuffer,
+        model: fixedModel,
+        report: runAccessibilityChecks(fixedModel),
+        applied: result.applied.length,
+        skipped: result.skipped,
+        notes: result.notes,
+      };
+    }
+
     if (request.kind === "media") {
       return {
         kind: "media",

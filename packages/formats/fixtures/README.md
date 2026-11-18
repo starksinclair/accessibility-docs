@@ -24,6 +24,7 @@ python3 packages/formats/fixtures/generate.py
 
 | Rule | Why |
 | --- | --- |
+| A003 | Withdrawn; see `RETIRED_RULES` in core. |
 | A005, A006 | Headings in a deck come from slide titles, which the reader emits at one level and never empty, so neither an empty heading nor a level skip can occur. |
 | A007 | Needs a picture whose image relationship is broken. It lands with the PPTX writer round-trip tests (T-3). |
 | A008 | Only fires when the deck has no `dc:title` *and* no file name; the Workbench always passes the uploaded file's name. |

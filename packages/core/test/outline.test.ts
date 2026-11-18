@@ -68,10 +68,9 @@ describe("buildOutline", () => {
     const outline = buildOutline(model, runAccessibilityChecks(model));
 
     expect(outline.sections[0].issues).toEqual([]);
-    // Slide 2: no title (A013) and an image with neither alt field (A003,
-    // A004).
+    // Slide 2: no title (A013) and an image with no alt description (A004).
     expect(outline.sections[1].issues.map((issue) => issue.code).sort()).toEqual(
-      ["A003", "A004", "A013"]
+      ["A004", "A013"]
     );
   });
 
@@ -80,10 +79,7 @@ describe("buildOutline", () => {
     const outline = buildOutline(model, runAccessibilityChecks(model));
     const image = outline.sections[1].nodes[0];
 
-    expect(image.issues.map((issue) => issue.code).sort()).toEqual([
-      "A003",
-      "A004",
-    ]);
+    expect(image.issues.map((issue) => issue.code)).toEqual(["A004"]);
     expect(image.nodeIndex).toBe(4);
   });
 

@@ -20,7 +20,6 @@ interface FixturePair {
 const FIXTURES: FixturePair[] = [
   { code: "A001", fail: "no-presentation-title", pass: "presentation-title" },
   { code: "A002", fail: "bold-text-as-heading", pass: "plain-body-text" },
-  { code: "A003", fail: "image-without-alt-title", pass: "image-with-alt-title" },
   {
     code: "A004",
     fail: "image-without-alt-description",

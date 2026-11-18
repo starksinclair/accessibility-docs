@@ -3,6 +3,18 @@
   "name": "accessibility-workbench",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-17",
+  // FR-10.7 — 20 suggestions a minute per client. `period` accepts only 10 or
+  // 60 seconds; `namespace_id` is a string by design.
+  "ratelimits": [
+    {
+      "name": "SUGGEST_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    }
+  ],
   "assets": {
     // Built React app from apps/author (FR-13.1)
     "directory": "../author/dist",

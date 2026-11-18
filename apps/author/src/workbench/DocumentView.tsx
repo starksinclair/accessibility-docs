@@ -9,9 +9,12 @@ import type {
   AccessibilityReport,
   DocumentModel,
 } from "@accessibility-docs/core";
+import type { PptxFix } from "@accessibility-docs/formats";
+import { FixPanel } from "./FixPanel";
 import { IssueSidebar, type IssueState, type SidebarIssue } from "./IssueSidebar";
 import { SlideCard } from "./SlideCard";
 import type { MediaMap, MediaStatus } from "./types";
+import type { ApplyResult } from "./useWorkbenchFiles";
 
 interface DocumentViewProps {
   name: string;
@@ -19,6 +22,13 @@ interface DocumentViewProps {
   report: AccessibilityReport;
   media: MediaMap;
   mediaStatus: MediaStatus;
+  /** How many fixes have been written into the working copy so far. */
+  appliedCount: number;
+  hasFixedCopy: boolean;
+  canUndo: boolean;
+  onApply: (fix: PptxFix) => Promise<ApplyResult>;
+  onUndo: () => void;
+  onDownload: () => void;
   onClose: () => void;
 }
 
@@ -28,6 +38,12 @@ export function DocumentView({
   report,
   media,
   mediaStatus,
+  appliedCount,
+  hasFixedCopy,
+  canUndo,
+  onApply,
+  onUndo,
+  onDownload,
   onClose,
 }: DocumentViewProps) {
   const outline = useMemo(
@@ -36,6 +52,14 @@ export function DocumentView({
   );
   const [statuses, setStatuses] = useState<Record<number, IssueState>>({});
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  const existingTitles = useMemo(
+    () =>
+      outline.sections
+        .map((section) => (section.title ?? "").trim())
+        .filter((title) => title.length > 0),
+    [outline]
+  );
 
   const indexOf = useCallback(
     (issue: AccessibilityIssue) => report.issues.indexOf(issue),
@@ -66,18 +90,39 @@ export function DocumentView({
     setStatuses((current) => ({ ...current, [index]: state }));
   }, []);
 
-  const fixed = Object.values(statuses).filter(
-    (state) => state === "fixed"
-  ).length;
   const skipped = Object.values(statuses).filter(
     (state) => state === "skipped"
   ).length;
 
+  // The denominator is what was wrong when the file was opened: fixing an
+  // issue removes it from the report, so counting today's issues would make
+  // the total shrink as the user worked.
+  const [startingCount] = useState(outline.issueCount + appliedCount);
+  const fixed = Math.min(appliedCount, startingCount);
+
   const counter =
-    outline.issueCount === 0
+    startingCount === 0
       ? "No issues found in this file."
-      : `${fixed} of ${outline.issueCount} issues fixed` +
+      : `${fixed} of ${startingCount} issues fixed` +
         (skipped > 0 ? `, ${skipped} skipped` : "");
+
+  const [lastNotes, setLastNotes] = useState<string[]>([]);
+
+  const applyFix = useCallback(
+    async (fix: PptxFix) => {
+      const result = await onApply(fix);
+      if (result.notes.length > 0) {
+        setLastNotes(result.notes);
+      }
+      if (result.applied > 0) {
+        // The issue is gone from the re-checked report, so there is nothing
+        // left to keep selected.
+        setSelectedIndex(null);
+      }
+      return result;
+    },
+    [onApply]
+  );
 
   return (
     <div className="viewer">
@@ -97,11 +142,50 @@ export function DocumentView({
           </p>
         </div>
 
-        {/* FR-8.8 — the counter is announced, not only drawn. */}
-        <p className="viewer-counter" role="status">
-          {counter}
-        </p>
+        <div className="viewer-tools">
+          {/* FR-8.8 — the counter is announced, not only drawn. */}
+          <p className="viewer-counter" role="status">
+            {counter}
+          </p>
+          <div className="viewer-buttons">
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              disabled={!hasFixedCopy}
+              onClick={onDownload}
+            >
+              Download fixed file
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              disabled={!canUndo}
+              onClick={() => {
+                // The note belonged to the fix being undone.
+                setLastNotes([]);
+                onUndo();
+              }}
+            >
+              Undo last fix
+            </button>
+          </div>
+        </div>
       </div>
+
+      {lastNotes.length > 0 ? (
+        <ul className="viewer-notes" aria-live="polite">
+          {lastNotes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      ) : null}
+
+      {hasFixedCopy ? (
+        <p className="viewer-dirty">
+          This deck has been fixed in memory. Your uploaded file is untouched —
+          download the fixed copy to keep the changes.
+        </p>
+      ) : null}
 
       <div className="viewer-panes">
         <nav className="slide-map" aria-label="Slides">
@@ -186,6 +270,24 @@ export function DocumentView({
             onSelect={onSelect}
             onSetStatus={onSetStatus}
             indexOf={indexOf}
+            renderFixPanel={(row) => (
+              <FixPanel
+                issue={row.issue}
+                model={model}
+                {...(row.page !== null
+                  ? {
+                      section: outline.sections.find(
+                        (section) => section.page === row.page
+                      ),
+                    }
+                  : {})}
+                existingTitles={existingTitles}
+                fileName={name}
+                media={media}
+                onApply={applyFix}
+                onSkip={() => onSetStatus(row.index, "skipped")}
+              />
+            )}
           />
         </aside>
       </div>

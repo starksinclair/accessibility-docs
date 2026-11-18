@@ -53,6 +53,7 @@ TipTap editor →  tiptapToModel.ts  →  DocumentModel  ┼→  runAccessibilit
 - C-2 `npm run build` and `npm run push` for the Checker must keep working after every change.
 - C-3 The existing Author editor keeps working at its current behavior. It moves to the `/author` route (see FR-1).
 - C-4 Existing rule codes A001 to A012 keep their codes, severities and meaning. New rules get new codes.
+  - **Amendment, November 17 2026: A003 (image has no alt title) is withdrawn.** No WCAG success criterion requires it — SC 1.1.1 asks for one text alternative, which is A004 — and PowerPoint 365 no longer exposes the field, so its manual instruction could not be followed. A withdrawn code is never reissued; `RETIRED_RULES` in `packages/core/src/ruleCatalog.ts` records it so an older report that names A003 can still be explained. `FigureNode.altTitle` stays in the model: Google Docs still has the field, the PPTX reader and writer round-trip `p:cNvPr@title`, and the PDF exporter uses it as a fallback. The rest of C-4 is unchanged.
 
 ---
 
@@ -99,7 +100,7 @@ TipTap editor →  tiptapToModel.ts  →  DocumentModel  │
 | Viewer | Render PDF; render PPTX slides (or structure view fallback) | Highlight issue location | |
 | Issue sidebar | List issues, click to jump | Filters | |
 | AI suggestions | Image alt text, slide titles | Table headers | Long descriptions for charts |
-| Fixes (PPTX) | Alt text, empty title, table header row, document title | Add missing title placeholder | Reading order, decorative flag |
+| Fixes (PPTX) | Alt text, empty title, **add missing title placeholder**, table header row, document title | | Reading order, decorative flag |
 | Fixes (PDF) | Document title, language, alt text on tagged figures | Table header cells on tagged PDFs | Untagged PDF tagging, OCR |
 | Google Slides | | | Read and fix via Slides API |
 | Export | Download fixed file | Before and after report | |
@@ -141,7 +142,7 @@ The model must carry what PPTX and PDF need, without breaking existing adapters.
 
 ### FR-3 New rules in core (P0)
 
-Existing rules apply to PPTX and PDF through the model (for example A003 and A004 for images, A011 for tables). Add these, following the existing A-code style:
+Existing rules apply to PPTX and PDF through the model (for example A004 for images, A011 for tables). Add these, following the existing A-code style:
 
 | Code | Severity | Check | Applies to |
 | --- | --- | --- | --- |
@@ -152,7 +153,8 @@ Existing rules apply to PPTX and PDF through the model (for example A003 and A00
 | A017 | error | PDF pages have no extractable text (likely scanned) | pdf |
 
 - FR-3.1 Each rule declares a `fixable` value: `"auto"`, `"ai-assisted"` or `"manual-only"`, plus plain-language manual instructions.
-- FR-3.2 Mapping for existing rules: A001 auto (doc title), A003 and A004 ai-assisted (alt title and description), A011 auto (set header row), A013 ai-assisted, A016 and A017 manual-only.
+- FR-3.2 Mapping for existing rules: A001 auto (doc title), A004 ai-assisted (alt description), A011 auto (set header row), A016 and A017 manual-only.
+- FR-3.2a **A013 (slide has no title) is `auto`, not `ai-assisted`.** Writing a slide title is the capability this project exists to add: Panorama can only print instructions for it. The Workbench always offers a one-click fix — a first-draft title taken from the slide's own text — and inserts a title placeholder when the slide has none (FR-5.5). "Suggest with AI" improves the wording; a fix never waits on it, and nothing is written without the user pressing Apply.
 - FR-3.3 Rules stay pure TypeScript with no runtime dependencies (C-1).
 
 **Acceptance:** unit tests for each new rule; existing rule tests still pass; Checker build still passes.
@@ -164,7 +166,7 @@ New workspace package `@accessibility-docs/formats`. Runtime dependencies allowe
 **PPTX reader `pptxToModel(file)`:**
 - FR-4.1 Unzip with JSZip, read `ppt/presentation.xml` for slide order, then each `ppt/slides/slideN.xml`.
 - FR-4.2 Per slide: title from the placeholder with `type="title"` or `type="ctrTitle"`; text runs; pictures (`p:pic`); tables (`a:tbl`, header row from `a:tblPr firstRow`).
-- FR-4.3 Picture alt fields map directly to the existing model: `p:cNvPr@title` is the alt title (A003) and `p:cNvPr@descr` is the alt description (A004). A picture PowerPoint has marked decorative (`adec:decorative`) is exempt from alt text, so it produces no figure node and no A003/A004.
+- FR-4.3 Picture alt fields map directly to the existing model: `p:cNvPr@descr` is the alt description (A004). `p:cNvPr@title` is still read into `altTitle` and written back untouched, but nothing checks it any more (see the C-4 amendment). A picture PowerPoint has marked decorative (`adec:decorative`) is exempt from alt text, so it produces no figure node and no A004.
 - FR-4.4 Document title from `docProps/core.xml` (`dc:title`).
 - FR-4.5 `location.bbox` from shape `a:off` and `a:ext` (EMU, convert to points: 1 pt = 12700 EMU).
 - FR-4.5a A non-empty slide title is also emitted as a `heading` node (level 2) beside the section marker's `title`. A slide title is how a deck is navigated, so this is the honest mapping, and without it A009 ("no headings to navigate by") would fire against every deck. Empty titles are not emitted as headings; A013 already reports them.
@@ -183,7 +185,7 @@ Writers take the original file plus a list of approved fixes and return a new fi
 - FR-5.2 Empty title: write text into the existing title placeholder's `a:t`.
 - FR-5.3 Table header: set `firstRow="1"` on `a:tblPr`.
 - FR-5.4 Document title: set `dc:title` in `docProps/core.xml`.
-- FR-5.5 (P1) Missing title placeholder: insert a `p:sp` with `p:ph type="title"`. If it would change the visual layout, place it off-slide and tell the user.
+- FR-5.5 **(P0, promoted from P1)** Missing title placeholder: insert a `p:sp` with `p:ph type="title"`. A slide with no title placeholder is the common case in the decks this tool is for, and refusing to fix it would leave the headline capability (FR-3.2a) working only on the easy half. The inserted placeholder is positioned off the visible slide area so the deck looks unchanged, and the user is told that the title is there for assistive technology but not shown on the slide.
 
 **PDF writer (pdf-lib, low-level object access):**
 - FR-5.6 Document title: set Info `/Title` and `/ViewerPreferences /DisplayDocTitle true`.
@@ -231,19 +233,19 @@ Writers take the original file plus a list of approved fixes and return a new fi
 
 ### FR-9 Workbench: fix panel and AI (P0)
 
-**Images (A003, A004):**
-- FR-9.1 Show the image, inputs for alt title and alt description (matching the existing figure node fields), and "Suggest with AI."
+**Images (A004):**
+- FR-9.1 Show the image, an input for the alt description, and "Suggest with AI." (The alt title input goes with the withdrawn A003; the field stays in the model but the panel no longer asks for it.)
 - FR-9.2 Optional **teaching goal** field: "What is this slide teaching?" sent with the request.
 - FR-9.3 **Assessment mode** toggle: tells the AI not to reveal answers on quiz images, and shows a reminder to check.
 
 **Slide titles (A013):**
-- FR-9.4 "Suggest with AI" proposes a title from the slide's text. User edits, then applies.
+- FR-9.4 The panel proposes a title from the slide's own text with no AI call, so a fix is always one click away (FR-3.2a). "Suggest with AI" replaces that draft with a better one. User edits, then applies.
 
 **Tables (A011):**
 - FR-9.5 One-click "Set first row as header" (no AI needed). (P1: AI suggests which row is the header.)
 
 **All fixes:**
-- FR-9.6 Buttons: Apply, Skip, Undo (session only). Every write needs a click.
+- FR-9.6 Buttons: Apply, Skip, Undo (session only). Every write needs a click. Undo steps back through the last 10 Applies for a file; each step holds a whole deck in memory, so the depth is capped.
 - FR-9.7 After Apply, re-run the reader and checks on the working copy and update the score.
 - FR-9.8 Manual-only issues show the rule's instructions instead of a fix button.
 - FR-9.9 Every AI result is labeled "AI suggestion, review before applying."
@@ -254,7 +256,7 @@ Writers take the original file plus a list of approved fixes and return a new fi
 
 - FR-10.1 `POST /api/suggest` in `apps/worker/src/index.ts` calls the Gemini REST API with `fetch`. The API key is a Worker secret (`wrangler secret put GEMINI_API_KEY`), never in the browser bundle or `wrangler.jsonc`. For local dev use `apps/worker/.dev.vars`, which must be in `.gitignore`.
 - FR-10.2 Request body: `kind` (`alt-text`, `title`, `table-header`), the single image (base64, max 5 MB) or table text, slide or page title, nearby text, optional teaching goal, assessment mode flag.
-- FR-10.3 Response: validated JSON, e.g. `{ altTitle, altDescription, decorative, rationale }` or `{ title }`. On invalid JSON retry once, then return an error.
+- FR-10.3 Response: validated JSON — `{ altDescription, decorative, rationale, promptVersion }` or `{ title, rationale, promptVersion }`. (No `altTitle`: see the C-4 amendment.) On invalid JSON retry once, then return an error. A decorative image may come back with an empty description; anything else empty is treated as a failed suggestion rather than an answer.
 - FR-10.4 Prompts live in `apps/worker/src/prompts/` as versioned files, imported at build time (Workers have no file system at runtime).
 - FR-10.5 Alt text prompt: describe purpose in context, no "image of," under 150 characters for the description unless the image is a complex chart, flag decorative images, never reveal answers in assessment mode.
 - FR-10.6 Title prompt: under 60 characters, reflects the slide's main point, never generic ("Slide 4", "Introduction").
@@ -263,7 +265,7 @@ Writers take the original file plus a list of approved fixes and return a new fi
 
 ### FR-11 Export (P0)
 
-- FR-11.1 Download the fixed file named `<original>-accessible.pptx` or `.pdf`.
+- FR-11.1 Download the fixed file named `<original>-accessible.pptx` or `.pdf`. **Built with Milestone 5**, because FR-9's own acceptance ends with the user downloading the deck and seeing the fix in PowerPoint; a writer that cannot be opened in PowerPoint is not demonstrably finished.
 - FR-11.2 (P1) Before and after report (HTML): priority score, errors and warnings before vs. after, fixes applied, remaining manual items.
 
 ### FR-12 Google Slides (P2)

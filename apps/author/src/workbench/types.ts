@@ -2,7 +2,11 @@ import type {
   AccessibilityReport,
   DocumentModel,
 } from "@accessibility-docs/core";
-import type { SlideImage } from "@accessibility-docs/formats";
+import type {
+  PptxFix,
+  SkippedFix,
+  SlideImage,
+} from "@accessibility-docs/formats";
 
 /**
  * What the parsing worker is asked to do.
@@ -14,7 +18,15 @@ import type { SlideImage } from "@accessibility-docs/formats";
  */
 export type WorkerRequest =
   | { kind: "read"; id: string; name: string; bytes: ArrayBuffer }
-  | { kind: "media"; id: string; name: string; bytes: ArrayBuffer };
+  | { kind: "media"; id: string; name: string; bytes: ArrayBuffer }
+  /** FR-9.6 / FR-9.7 — write approved fixes, then re-read and re-check. */
+  | {
+      kind: "apply";
+      id: string;
+      name: string;
+      bytes: ArrayBuffer;
+      fixes: PptxFix[];
+    };
 
 export type WorkerResponse =
   | {
@@ -26,7 +38,19 @@ export type WorkerResponse =
     }
   | { kind: "media"; id: string; ok: true; images: SlideImage[] }
   | {
-      kind: "read" | "media";
+      kind: "apply";
+      id: string;
+      ok: true;
+      /** The fixed deck. The upload itself is never modified (FR-5). */
+      bytes: ArrayBuffer;
+      model: DocumentModel;
+      report: AccessibilityReport;
+      applied: number;
+      skipped: SkippedFix[];
+      notes: string[];
+    }
+  | {
+      kind: "read" | "media" | "apply";
       id: string;
       ok: false;
       /** Shown to the user verbatim as the failure reason (FR-6.3). */
@@ -53,6 +77,14 @@ export interface WorkbenchFile {
   model?: DocumentModel;
   report?: AccessibilityReport;
   reason?: string;
+  /**
+   * The fixed deck, once anything has been applied. Present means "this file
+   * has unsaved changes you can download"; absent means it is still as
+   * uploaded.
+   */
+  fixed?: Uint8Array;
+  /** How many fixes have been written, for the counter (FR-8.8). */
+  appliedCount?: number;
 }
 
 /** Images for one file, keyed by the part path a FigureNode's `src` holds. */

@@ -1,2 +1,10 @@
-# Copy to apps/worker/.dev.vars for local wrangler dev (never commit .dev.vars).
+# Local values for `wrangler dev` (FR-13.4). Copy to .dev.vars, which is
+# gitignored and must never be committed.
+#
+#   cp apps/worker/.dev.vars.example apps/worker/.dev.vars
+#
+# In production the key is a Worker secret instead:
+#   npx wrangler secret put GEMINI_API_KEY
 GEMINI_API_KEY=
+# Optional: override the model id without a code change.
+# GEMINI_MODEL=gemini-2.5-flash

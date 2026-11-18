@@ -25,7 +25,14 @@ export { defaultTextFormatting } from "./types.js";
 export { assertAccessible, runAccessibilityChecks } from "./rules.js";
 
 export type { RuleMetadata, RuleScope } from "./ruleCatalog.js";
-export { getRuleMetadata, listRules, RULES } from "./ruleCatalog.js";
+export {
+  getRuleMetadata,
+  listRules,
+  RETIRED_RULES,
+  RULES,
+} from "./ruleCatalog.js";
+
+export { draftSlideTitle } from "./draftTitle.js";
 
 export type {
   DocumentOutline,

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { runAccessibilityChecks } from "../src/rules.js";
-import { RULES, getRuleMetadata, listRules } from "../src/ruleCatalog.js";
+import {
+  getRuleMetadata,
+  listRules,
+  RETIRED_RULES,
+  RULES,
+} from "../src/ruleCatalog.js";
 import { parseDocument, serializeDocument } from "../src/serialize.js";
 import { doc, figure, slide, table, title } from "./helpers.js";
 
@@ -78,10 +83,11 @@ describe("FR-3.1 / FR-3.2 — the rule catalog", () => {
 
   it("matches the FR-3.2 mapping", () => {
     expect(RULES.A001.fixable).toBe("auto");
-    expect(RULES.A003.fixable).toBe("ai-assisted");
     expect(RULES.A004.fixable).toBe("ai-assisted");
     expect(RULES.A011.fixable).toBe("auto");
-    expect(RULES.A013.fixable).toBe("ai-assisted");
+    // A013 is "auto" rather than FR-3.2's original "ai-assisted": the tool
+    // writes the title itself, and AI only improves the wording.
+    expect(RULES.A013.fixable).toBe("auto");
     expect(RULES.A016.fixable).toBe("manual-only");
     expect(RULES.A017.fixable).toBe("manual-only");
   });
@@ -92,11 +98,25 @@ describe("FR-3.1 / FR-3.2 — the rule catalog", () => {
     }
   });
 
-  it("covers A001 through A017 with no gaps", () => {
+  it("covers A001 through A017, less the codes that were withdrawn", () => {
     const expected = Array.from({ length: 17 }, (_, i) =>
       `A${String(i + 1).padStart(3, "0")}`
-    );
+    ).filter((code) => !(code in RETIRED_RULES));
+
     expect(listRules().map((r) => r.code)).toEqual(expected);
+  });
+
+  it("keeps a withdrawn code out of the catalog and explains it", () => {
+    // A retired code is never reissued: a report saved before the change
+    // still names it, so it has to stay findable.
+    expect(RETIRED_RULES.A003).toMatch(/Withdrawn/);
+    expect(RULES.A003).toBeUndefined();
+    expect(getRuleMetadata("A003")).toBeUndefined();
+  });
+
+  it("fixes a missing slide title in the file, not by hand", () => {
+    // The point of the Workbench: Panorama can only print instructions.
+    expect(RULES.A013.fixable).toBe("auto");
   });
 
   it("scopes the new rules to their formats", () => {

@@ -912,3 +912,136 @@
   gap: var(--space-3);
   margin: var(--space-5) 0 0;
 }
+
+/* ------------------------------------------------------------------ */
+/* Fix panel (FR-9)                                                    */
+/* ------------------------------------------------------------------ */
+
+.viewer-tools {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: end;
+}
+
+.viewer-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.viewer-notes {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-8);
+  border-left: 4px solid var(--bsu-lake);
+  background: var(--panel);
+  line-height: 1.55;
+}
+
+.viewer-dirty {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--ok);
+  background: var(--panel);
+  line-height: 1.55;
+}
+
+.fix-panel {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+}
+
+.fix-image {
+  display: block;
+  max-width: 100%;
+  max-height: 9rem;
+  border: 1px solid var(--line);
+  background: var(--paper-alt);
+}
+
+.fix-label {
+  font-family: var(--condensed);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.fix-optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.fix-input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+textarea.fix-input {
+  resize: vertical;
+}
+
+.fix-input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.fix-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  font-size: 0.9375rem;
+}
+
+.fix-check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+}
+
+.fix-note,
+.fix-manual,
+.fix-problem,
+.fix-ai-notice {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.fix-note {
+  color: var(--ink-soft);
+}
+
+.fix-ai-notice {
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--bsu-lake);
+  background: var(--paper-alt);
+}
+
+.fix-problem {
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--error);
+  color: var(--error);
+}
+
+.fix-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

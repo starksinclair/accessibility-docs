@@ -46,9 +46,13 @@ export function WorkbenchPage() {
     media,
     mediaStatus,
     addFiles,
+    applyFixes,
+    canUndo,
     clearAll,
+    downloadFixed,
     loadMedia,
     removeFile,
+    undoLastFix,
   } = useWorkbenchFiles();
   const [openFileId, setOpenFileId] = useState<string | null>(null);
   const [rejected, setRejected] = useState<
@@ -144,6 +148,12 @@ export function WorkbenchPage() {
             report={openFile.report}
             media={media}
             mediaStatus={mediaStatus}
+            appliedCount={openFile.appliedCount ?? 0}
+            hasFixedCopy={openFile.fixed !== undefined}
+            canUndo={canUndo(openFile.id)}
+            onApply={(fix) => applyFixes(openFile.id, [fix])}
+            onUndo={() => undoLastFix(openFile.id)}
+            onDownload={() => downloadFixed(openFile.id)}
             onClose={() => setOpenFileId(null)}
           />
         ) : (

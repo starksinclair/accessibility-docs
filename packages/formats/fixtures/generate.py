@@ -203,23 +203,12 @@ def a002():
 
 
 # --------------------------------------------------------------------------
-# A003 / A004 — picture alt title and alt description
+# A004 — picture alt description
+#
+# There is deliberately no A003 fixture: that rule was withdrawn, because no
+# WCAG success criterion asks for a second, shorter "alt title".
 # --------------------------------------------------------------------------
-def a003_a004():
-    fail = deck(title="BIO 101 Week 3")
-    slide = titled_slide(fail, "Week 3: The cell cycle", "See the diagram below.")
-    add_picture(slide, alt_title=None, alt_description="Diagram of the cell cycle.")
-    save(fail, "A003", "fail", "image-without-alt-title")
-
-    ok = deck(title="BIO 101 Week 3")
-    slide = titled_slide(ok, "Week 3: The cell cycle", "See the diagram below.")
-    add_picture(
-        slide,
-        alt_title="Cell cycle diagram",
-        alt_description="The four phases of the cell cycle, in order.",
-    )
-    save(ok, "A003", "pass", "image-with-alt-title")
-
+def a004():
     fail = deck(title="BIO 101 Week 3")
     slide = titled_slide(fail, "Week 3: The cell cycle", "See the diagram below.")
     add_picture(slide, alt_title="Cell cycle diagram", alt_description=None)
@@ -349,7 +338,7 @@ def main():
         print("Writing fixtures:")
         a001()
         a002()
-        a003_a004()
+        a004()
         a009()
         a011()
         a013()

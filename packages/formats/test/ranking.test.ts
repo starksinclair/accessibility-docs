@@ -43,17 +43,16 @@ describe("ranking real decks", () => {
       // One image with no alt description (A004) and one table with no header
       // row (A011).
       "lab-three": [2, 0],
-      // Three untitled slides (A013 x3), three images with no alt description
-      // (A004 x3) and no document title (A001) are the seven errors; three
-      // missing alt titles (A003 x3) and one duplicated slide title (A014) are
-      // the four warnings.
-      "legacy-lecture": [7, 4],
+      // Three untitled slides (A013 x3), three images with no alt
+      // description (A004 x3) and no document title (A001) are the seven
+      // errors; one duplicated slide title (A014) is the single warning.
+      "legacy-lecture": [7, 1],
     });
   });
 
   it("orders by priority, worst first (FR-7.1, FR-7.2)", () => {
     expect(ranked.map((entry) => [entry.id, entry.score.priority])).toEqual([
-      ["legacy-lecture", 82],
+      ["legacy-lecture", 73],
       ["lab-three", 20],
       ["clean-syllabus", 0],
     ]);
@@ -69,10 +68,12 @@ describe("ranking real decks", () => {
   it("estimates effort from the rule catalog (FR-7.3)", () => {
     const worst = ranked[0];
 
-    // A001 is auto; A003, A004, A013 and A014 are AI-assisted.
+    // A001 and the three A013s are fixes the tool applies itself; the three
+    // A004 alt descriptions and the duplicated title need wording, so they
+    // are AI-assisted.
     expect(worst.score.effort).toEqual({
-      auto: 1,
-      "ai-assisted": 10,
+      auto: 4,
+      "ai-assisted": 4,
       "manual-only": 0,
     });
   });
