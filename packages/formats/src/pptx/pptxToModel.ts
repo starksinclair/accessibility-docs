@@ -404,8 +404,8 @@ function paragraphText(paragraph: XmlNode | undefined): string {
  * Run formatting from the paragraph's first run.
  *
  * Anything the run does not state is left null rather than guessed from the
- * layout or master. A002 ("bold, large text is not a heading") only fires on
- * what the slide itself says, which keeps it off inherited theme styling.
+ * layout or master, so inherited theme styling is not treated as authored
+ * formatting.
  */
 function formattingOf(paragraph: XmlNode | undefined): TextFormatting {
   if (!paragraph) {

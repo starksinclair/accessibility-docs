@@ -67,7 +67,6 @@ export function runAccessibilityChecks(
   const issues: AccessibilityIssue[] = [
     ...checkDocumentTitle(document),
     ...checkDocumentName(document),
-    ...checkPossibleVisualHeadings(document),
     ...checkEmptyHeadings(document),
     ...checkHeadingLevelOrder(document),
     ...checkImagesHaveAltText(document),
@@ -144,42 +143,6 @@ function checkDocumentName(document: DocumentModel): AccessibilityIssue[] {
       help: "Set a descriptive document name; it becomes the PDF Title metadata.",
     }),
   ];
-}
-
-/** A002 — Bold/large paragraphs that look like headings. */
-function checkPossibleVisualHeadings(
-  document: DocumentModel
-): AccessibilityIssue[] {
-  const issues: AccessibilityIssue[] = [];
-
-  for (let nodeIndex = 0; nodeIndex < document.nodes.length; nodeIndex++) {
-    const node = document.nodes[nodeIndex];
-    if (node.type !== "paragraph") {
-      continue;
-    }
-
-    const looksLikeHeading =
-      node.formatting.bold &&
-      node.formatting.fontSize !== null &&
-      node.formatting.fontSize >= 16;
-
-    if (looksLikeHeading) {
-      issues.push(
-        issue(
-          "A002",
-          `"${node.text}" visually resembles a heading ` +
-            "but is not marked as a semantic heading.",
-          {
-            help: "If this text is a section heading, apply an appropriate Heading style.",
-            nodeIndex,
-            node,
-          }
-        )
-      );
-    }
-  }
-
-  return issues;
 }
 
 /** A005 — Headings must have text (PDF9). */

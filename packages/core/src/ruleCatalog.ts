@@ -36,6 +36,8 @@ export interface RuleMetadata {
  * look one up and find out what happened to it.
  */
 export const RETIRED_RULES: Record<string, string> = {
+  A002:
+    "Withdrawn. It flagged bold, large paragraphs as possible headings. That is only a heuristic for WCAG 1.3.1 and created too many false positives on emphasized body text, so it was removed as noise.",
   A003:
     "Withdrawn. It asked for an image \"alt title\", which no WCAG success criterion requires — SC 1.1.1 asks for one text alternative, which is A004. PowerPoint 365 no longer exposes the field at all, so the instruction could not be followed.",
 };
@@ -48,15 +50,6 @@ export const RULES: Record<string, RuleMetadata> = {
     fixable: "auto",
     manualFix:
       "Select the title line and apply the Title style, so assistive technology announces it as the document title.",
-    appliesTo: "all",
-  },
-  A002: {
-    code: "A002",
-    severity: "warning",
-    title: "Bold, large text is not a heading",
-    fixable: "manual-only",
-    manualFix:
-      "Decide whether this line really is a section heading. If it is, apply the matching Heading style instead of bold text. If it is not, leave it as it is.",
     appliesTo: "all",
   },
   A004: {

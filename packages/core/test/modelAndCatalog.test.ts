@@ -109,8 +109,11 @@ describe("FR-3.1 / FR-3.2 — the rule catalog", () => {
   it("keeps a withdrawn code out of the catalog and explains it", () => {
     // A retired code is never reissued: a report saved before the change
     // still names it, so it has to stay findable.
+    expect(RETIRED_RULES.A002).toMatch(/Withdrawn/);
     expect(RETIRED_RULES.A003).toMatch(/Withdrawn/);
+    expect(RULES.A002).toBeUndefined();
     expect(RULES.A003).toBeUndefined();
+    expect(getRuleMetadata("A002")).toBeUndefined();
     expect(getRuleMetadata("A003")).toBeUndefined();
   });
 

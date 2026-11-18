@@ -48,7 +48,6 @@ accessibility-docs/
 | Code | Severity | Check | Applies to | Fixable |
 |------|----------|--------|------------|---------|
 | A001 | error | Document has a semantic title | all | auto |
-| A002 | warning | Bold, large text is not marked as a heading | all | manual-only |
 | A004 | error | Image is missing an alt description | all | ai-assisted |
 | A005 | error | Heading has no text | all | manual-only |
 | A006 | warning | Heading levels skip (for example H1 → H3) | all | manual-only |

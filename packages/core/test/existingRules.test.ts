@@ -10,7 +10,6 @@ import {
   table,
   title,
 } from "./helpers.js";
-import { defaultTextFormatting } from "../src/types.js";
 
 function only(
   model: Parameters<typeof runAccessibilityChecks>[0],
@@ -27,9 +26,8 @@ function only(
 describe("C-4 — existing rule severities are frozen", () => {
   const frozen: Record<string, "error" | "warning"> = {
     A001: "error",
-    A002: "warning",
-    // A003 was withdrawn: see RETIRED_RULES. The remaining codes keep their
-    // severities, which is what C-4 is protecting.
+    // A002 and A003 were withdrawn: see RETIRED_RULES. Remaining codes keep
+    // their severities, which is what C-4 is protecting.
     A004: "error",
     A005: "error",
     A006: "warning",
@@ -59,28 +57,6 @@ describe("A001 — document title", () => {
 
   it("passes with a real title", () => {
     expect(only(doc([title("Week 1")]), "A001")).toHaveLength(0);
-  });
-});
-
-describe("A002 — bold, large text that is not a heading", () => {
-  it("reports bold text at 16pt or above", () => {
-    const model = doc([
-      title("Week 1"),
-      paragraph("Key terms", {
-        formatting: defaultTextFormatting({ bold: true, fontSize: 18 }),
-      }),
-    ]);
-    expect(only(model, "A002")).toHaveLength(1);
-  });
-
-  it("ignores bold text below the size threshold", () => {
-    const model = doc([
-      title("Week 1"),
-      paragraph("Key terms", {
-        formatting: defaultTextFormatting({ bold: true, fontSize: 12 }),
-      }),
-    ]);
-    expect(only(model, "A002")).toHaveLength(0);
   });
 });
 
@@ -238,9 +214,7 @@ describe("A010 / A011 / A012 — tables", () => {
 
 describe("assertAccessible", () => {
   it("blocks only on errors", () => {
-    const warningOnly = doc([title("W"), paragraph("Heading-ish", {
-      formatting: { ...defaultTextFormatting(), bold: true, fontSize: 18 },
-    })]);
+    const warningOnly = doc([title("W")], { documentName: "" });
     const result = assertAccessible(warningOnly);
 
     expect(result.ok).toBe(true);
