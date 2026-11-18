@@ -83,7 +83,6 @@ import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
 
 // --- Components ---
-import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
 import { TitleHeading } from "@/editor/TitleHeading"
 import { Figure } from "@/editor/Figure"
 import { AccessibilityDecorations } from "@/editor/AccessibilityDecorations"
@@ -92,8 +91,7 @@ import { tiptapToModel } from "@/adapters/tiptapToModel"
 import { trySaveDocument } from "@/lib/saveDocument"
 import { compilePdf } from "@/compiler/compilePdf"
 import { ReportPanel } from "@/components/ReportPanel"
-import { BsuLogo } from "@/components/BrandMark"
-import { ThemeToggle as HeaderThemeToggle } from "@/components/ThemeToggle"
+// import { BsuLogo } from "@/components/BrandMark"
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
@@ -633,7 +631,6 @@ const MainToolbarContent = ({
           data-active-state={isSearchAndReplaceOpen ? "on" : "off"}
           onClick={onSearchAndReplaceClick}
         />
-        <ThemeToggle />
       </ToolbarGroup>
     </>
   )
@@ -880,9 +877,9 @@ export function SimpleEditor() {
     <div className="author-layout">
       <header className="author-header">
         <div className="brand">
-          <BsuLogo />
+          {/* <BsuLogo /> */}
           <div>
-            <p className="author-eyebrow">Accessibility Workbench</p>
+            {/* <p className="author-eyebrow">Accessibility Workbench</p> */}
             <h1>Author</h1>
             <p className="author-tagline">
               Structured writing with compile-time accessibility checks
@@ -906,7 +903,6 @@ export function SimpleEditor() {
           <button type="button" className="primary" onClick={handleSave}>
             Save
           </button>
-          <HeaderThemeToggle />
         </div>
       </header>
 

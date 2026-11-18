@@ -1,12 +1,13 @@
 /**
- * One file's findings, grouped by the slide they sit on (FR-7.2 context, and
- * the groundwork for the sidebar in FR-8).
+ * One file's findings, grouped by the slide or page they sit on (FR-7.2
+ * context, and the groundwork for the sidebar in FR-8).
  *
- * Every finding names its slide, so the ranking already answers "where is it?"
- * before the viewer exists.
+ * Every finding names where it is, so the ranking already answers "where is
+ * it?" before the viewer exists.
  */
 import { getRuleMetadata } from "@accessibility-docs/core";
 import type { AccessibilityIssue } from "@accessibility-docs/core";
+import type { DocumentFormat } from "./types";
 
 const SEVERITY_LABEL: Record<string, string> = {
   error: "Error",
@@ -26,13 +27,16 @@ interface Group {
   issues: AccessibilityIssue[];
 }
 
-function groupByLocation(issues: AccessibilityIssue[]): Group[] {
+function groupByLocation(
+  issues: AccessibilityIssue[],
+  where: string
+): Group[] {
   const groups = new Map<string, Group>();
 
   for (const issue of issues) {
     const page = issue.location?.page;
     const key = page === undefined ? "document" : `slide-${page}`;
-    const label = page === undefined ? "Whole file" : `Slide ${page}`;
+    const label = page === undefined ? "Whole file" : `${where} ${page}`;
 
     const group = groups.get(key);
     if (group) {
@@ -42,7 +46,7 @@ function groupByLocation(issues: AccessibilityIssue[]): Group[] {
     }
   }
 
-  // Document-level findings first, then slides in deck order.
+  // Document-level findings first, then slides or pages in file order.
   return [...groups.values()].sort((a, b) => {
     if (a.key === "document") return -1;
     if (b.key === "document") return 1;
@@ -52,8 +56,14 @@ function groupByLocation(issues: AccessibilityIssue[]): Group[] {
   });
 }
 
-export function FileFindings({ issues }: { issues: AccessibilityIssue[] }) {
-  const groups = groupByLocation(issues);
+export function FileFindings({
+  issues,
+  format,
+}: {
+  issues: AccessibilityIssue[];
+  format?: DocumentFormat;
+}) {
+  const groups = groupByLocation(issues, format === "pdf" ? "Page" : "Slide");
 
   return (
     <ul className="findings">

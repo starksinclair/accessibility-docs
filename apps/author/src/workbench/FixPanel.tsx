@@ -13,14 +13,13 @@ import type {
   DocumentModel,
   OutlineSection,
 } from "@accessibility-docs/core";
-import type { PptxFix } from "@accessibility-docs/formats";
 import type { ApplyResult } from "./useWorkbenchFiles";
 import {
   requestSuggestion,
   SuggestionError,
   type Suggestion,
 } from "./suggestClient";
-import type { MediaMap } from "./types";
+import type { DocumentFix, DocumentFormat, MediaMap } from "./types";
 
 interface FixPanelProps {
   issue: AccessibilityIssue;
@@ -30,9 +29,18 @@ interface FixPanelProps {
   /** Titles already in the deck, so a suggestion is not another duplicate. */
   existingTitles: string[];
   fileName: string;
+  /** Which writer this file's fixes go to, and so what can be offered. */
+  format: DocumentFormat;
   media: MediaMap;
-  onApply: (fix: PptxFix) => Promise<ApplyResult>;
+  onApply: (fix: DocumentFix) => Promise<ApplyResult>;
   onSkip: () => void;
+}
+
+/** Where a finding of this kind has to be fixed when the tool cannot. */
+function manualHome(format: DocumentFormat): string {
+  return format === "pdf"
+    ? "This one has to be fixed in the file the PDF was made from, then exported again. The tool will not pretend otherwise."
+    : "This one has to be done in PowerPoint. The tool will not pretend otherwise.";
 }
 
 export function FixPanel(props: FixPanelProps) {
@@ -42,10 +50,7 @@ export function FixPanel(props: FixPanelProps) {
     return (
       <div className="fix-panel">
         <p className="fix-manual">{rule.manualFix}</p>
-        <p className="fix-note">
-          This one has to be done in PowerPoint. The tool will not pretend
-          otherwise.
-        </p>
+        <p className="fix-note">{manualHome(props.format)}</p>
         <div className="fix-actions">
           <button type="button" className="btn btn-ghost btn-sm" onClick={props.onSkip}>
             Skip
@@ -62,25 +67,38 @@ export function FixPanel(props: FixPanelProps) {
     case "A014":
       return <SlideTitleFix {...props} />;
     case "A011":
-      return <TableHeaderFix {...props} />;
+      // FR-5.9 — turning a PDF's `/TD` cells into `/TH` is a P1 that has not
+      // landed, so for a PDF this is still the manual instruction rather than
+      // a button that would do nothing.
+      return props.format === "pdf" ? (
+        <ManualFallback {...props} />
+      ) : (
+        <TableHeaderFix {...props} />
+      );
     case "A001":
       return <DocumentTitleFix {...props} />;
+    case "A015":
+      return <LanguageFix {...props} />;
     default:
-      return (
-        <div className="fix-panel">
-          <p className="fix-manual">{rule?.manualFix}</p>
-          <div className="fix-actions">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={props.onSkip}
-            >
-              Skip
-            </button>
-          </div>
-        </div>
-      );
+      return <ManualFallback {...props} />;
   }
+}
+
+/** A finding this tool cannot write, with the steps that do fix it. */
+function ManualFallback({ issue, format, onSkip }: FixPanelProps) {
+  const rule = getRuleMetadata(issue.code);
+
+  return (
+    <div className="fix-panel">
+      <p className="fix-manual">{rule?.manualFix}</p>
+      <p className="fix-note">{manualHome(format)}</p>
+      <div className="fix-actions">
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onSkip}>
+          Skip
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /** Shared state for a panel that writes one value into the deck. */
@@ -129,6 +147,7 @@ function AltTextFix({
   issue,
   model,
   section,
+  format,
   media,
   onApply,
   onSkip,
@@ -149,6 +168,12 @@ function AltTextFix({
     setDescription(figure?.altDescription ?? "");
     setSuggestion(null);
   }, [figure?.altDescription, issue.nodeIndex]);
+
+  // FR-10.2 — a suggestion sends the picture, so it can only be offered when
+  // there is a picture to send. A PPTX picture is a file in the package; a PDF
+  // figure is a marked region of a page's content stream.
+  const canSuggest = format === "pptx";
+  const where = format === "pdf" ? "page" : "slide";
 
   const nearbyText = (section?.nodes ?? [])
     .map((entry) =>
@@ -206,29 +231,45 @@ function AltTextFix({
         placeholder="What does this image tell a student who cannot see it?"
       />
 
-      <label className="fix-label" htmlFor={`${fieldId}-goal`}>
-        What is this slide teaching? <span className="fix-optional">Optional</span>
-      </label>
-      <input
-        id={`${fieldId}-goal`}
-        className="fix-input"
-        type="text"
-        value={teachingGoal}
-        onChange={(event) => setTeachingGoal(event.target.value)}
-        placeholder="Sent with the suggestion request to keep it on topic"
-      />
+      {canSuggest ? (
+        <>
+          <label className="fix-label" htmlFor={`${fieldId}-goal`}>
+            What is this {where} teaching?{" "}
+            <span className="fix-optional">Optional</span>
+          </label>
+          <input
+            id={`${fieldId}-goal`}
+            className="fix-input"
+            type="text"
+            value={teachingGoal}
+            onChange={(event) => setTeachingGoal(event.target.value)}
+            placeholder="Sent with the suggestion request to keep it on topic"
+          />
+        </>
+      ) : (
+        /* FR-10.2 sends the image itself, and a PDF figure is a region of a
+           page rather than a file that can be lifted out. Describing it is
+           still a one-field fix; it is just yours to write. */
+        <p className="fix-note">
+          There is no image file to send for a suggestion: in a PDF this figure
+          is part of the page. Look at page {issue.location?.page ?? "?"} and
+          describe what it shows.
+        </p>
+      )}
 
-      <div className="fix-check">
-        <input
-          id={`${fieldId}-assess`}
-          type="checkbox"
-          checked={assessmentMode}
-          onChange={(event) => setAssessmentMode(event.target.checked)}
-        />
-        <label htmlFor={`${fieldId}-assess`}>
-          This image is part of a quiz or exam
-        </label>
-      </div>
+      {canSuggest ? (
+        <div className="fix-check">
+          <input
+            id={`${fieldId}-assess`}
+            type="checkbox"
+            checked={assessmentMode}
+            onChange={(event) => setAssessmentMode(event.target.checked)}
+          />
+          <label htmlFor={`${fieldId}-assess`}>
+            This image is part of a quiz or exam
+          </label>
+        </div>
+      ) : null}
 
       {assessmentMode ? (
         <p className="fix-note">
@@ -257,14 +298,16 @@ function AltTextFix({
         >
           Apply
         </button>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm"
-          disabled={busy}
-          onClick={suggestWithAi}
-        >
-          {busy ? "Working…" : "Suggest with AI"}
-        </button>
+        {canSuggest ? (
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            disabled={busy}
+            onClick={suggestWithAi}
+          >
+            {busy ? "Working…" : "Suggest with AI"}
+          </button>
+        ) : null}
         <button type="button" className="btn btn-ghost btn-sm" onClick={onSkip}>
           Skip
         </button>
@@ -419,11 +462,82 @@ function TableHeaderFix({ issue, onApply, onSkip }: FixPanelProps) {
   );
 }
 
-/** A001 — the presentation's document title (FR-5.4). */
-function DocumentTitleFix({ fileName, model, onApply, onSkip }: FixPanelProps) {
+/**
+ * A015 — the document's language (FR-5.7).
+ *
+ * The tag decides how a screen reader pronounces every word in the file, so
+ * guessing it would be worse than asking: a French handout read with English
+ * pronunciation rules is unusable. The browser's own language is offered as
+ * the starting point because it is usually right and is never silently
+ * applied.
+ */
+function LanguageFix({ model, onApply, onSkip }: FixPanelProps) {
+  const fieldId = useId();
+  const [language, setLanguage] = useState(
+    model.flags?.language?.trim() || navigator.language || "en-US"
+  );
+  const { busy, problem, run } = useApplyState();
+
+  return (
+    <div className="fix-panel">
+      <label className="fix-label" htmlFor={`${fieldId}-lang`}>
+        Document language
+      </label>
+      <input
+        id={`${fieldId}-lang`}
+        className="fix-input"
+        type="text"
+        list={`${fieldId}-langs`}
+        value={language}
+        onChange={(event) => setLanguage(event.target.value)}
+        spellCheck={false}
+      />
+      <datalist id={`${fieldId}-langs`}>
+        <option value="en-US">English (United States)</option>
+        <option value="en-GB">English (United Kingdom)</option>
+        <option value="es-ES">Spanish (Spain)</option>
+        <option value="es-MX">Spanish (Mexico)</option>
+        <option value="fr-FR">French (France)</option>
+        <option value="de-DE">German (Germany)</option>
+        <option value="zh-CN">Chinese (Simplified)</option>
+      </datalist>
+      <p className="fix-note">
+        A language tag like <code>en-US</code>. This sets the whole document's
+        language; a passage in another language still has to be tagged in the
+        source file.
+      </p>
+      {problem ? <p className="fix-problem">{problem}</p> : null}
+
+      <div className="fix-actions">
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          disabled={busy || language.trim().length === 0}
+          onClick={() =>
+            run(() => onApply({ kind: "document-language", language }))
+          }
+        >
+          Apply
+        </button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onSkip}>
+          Skip
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** A001 — the file's document title (FR-5.4 for a deck, FR-5.6 for a PDF). */
+function DocumentTitleFix({
+  fileName,
+  format,
+  model,
+  onApply,
+  onSkip,
+}: FixPanelProps) {
   const fieldId = useId();
   const [title, setTitle] = useState(
-    model.documentName || fileName.replace(/\.pptx$/i, "")
+    model.documentName || fileName.replace(/\.(pptx|pdf)$/i, "")
   );
   const { busy, problem, run } = useApplyState();
 
@@ -440,8 +554,11 @@ function DocumentTitleFix({ fileName, model, onApply, onSkip }: FixPanelProps) {
         onChange={(event) => setTitle(event.target.value)}
       />
       <p className="fix-note">
-        This is the name assistive technology announces when the file opens, and
-        the title a PDF export carries.
+        {format === "pdf"
+          ? // FR-5.6 — /Title alone is ignored unless DisplayDocTitle says to
+            // use it, and the writer sets both, so this is worth saying.
+            "This is the name assistive technology announces when the file opens. Applying it also tells readers to show the title instead of the file name."
+          : "This is the name assistive technology announces when the file opens, and the title a PDF export carries."}
       </p>
       {problem ? <p className="fix-problem">{problem}</p> : null}
 

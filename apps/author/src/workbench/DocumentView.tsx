@@ -1,6 +1,6 @@
 /**
- * The two-pane document view (FR-8.1): the deck on the left, its issues on the
- * right, and a slide map for navigation (FR-8.4).
+ * The two-pane document view (FR-8.1): the file on the left, its issues on the
+ * right, and a slide or page map for navigation (FR-8.4).
  */
 import { useCallback, useMemo, useState } from "react";
 import { buildOutline } from "@accessibility-docs/core";
@@ -9,24 +9,30 @@ import type {
   AccessibilityReport,
   DocumentModel,
 } from "@accessibility-docs/core";
-import type { PptxFix } from "@accessibility-docs/formats";
 import { FixPanel } from "./FixPanel";
 import { IssueSidebar, type IssueState, type SidebarIssue } from "./IssueSidebar";
 import { SlideCard } from "./SlideCard";
-import type { MediaMap, MediaStatus } from "./types";
+import type {
+  DocumentFix,
+  DocumentFormat,
+  MediaMap,
+  MediaStatus,
+} from "./types";
 import type { ApplyResult } from "./useWorkbenchFiles";
 
 interface DocumentViewProps {
   name: string;
   model: DocumentModel;
   report: AccessibilityReport;
+  /** The format the reader found, which decides what a fix can do. */
+  format: DocumentFormat;
   media: MediaMap;
   mediaStatus: MediaStatus;
   /** How many fixes have been written into the working copy so far. */
   appliedCount: number;
   hasFixedCopy: boolean;
   canUndo: boolean;
-  onApply: (fix: PptxFix) => Promise<ApplyResult>;
+  onApply: (fix: DocumentFix) => Promise<ApplyResult>;
   onUndo: () => void;
   onDownload: () => void;
   onClose: () => void;
@@ -36,6 +42,7 @@ export function DocumentView({
   name,
   model,
   report,
+  format,
   media,
   mediaStatus,
   appliedCount,
@@ -52,6 +59,11 @@ export function DocumentView({
   );
   const [statuses, setStatuses] = useState<Record<number, IssueState>>({});
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  // A deck is navigated by slide and a PDF by page, and the words have to
+  // follow the file: "1 slide" for a one-page handout reads as a mistake.
+  const unit = format === "pdf" ? "page" : "slide";
+  const units = `${unit}s`;
 
   const existingTitles = useMemo(
     () =>
@@ -109,7 +121,7 @@ export function DocumentView({
   const [lastNotes, setLastNotes] = useState<string[]>([]);
 
   const applyFix = useCallback(
-    async (fix: PptxFix) => {
+    async (fix: DocumentFix) => {
       const result = await onApply(fix);
       if (result.notes.length > 0) {
         setLastNotes(result.notes);
@@ -134,7 +146,7 @@ export function DocumentView({
           <h2 className="viewer-title">{name}</h2>
           <p className="viewer-facts">
             {outline.sections.length}{" "}
-            {outline.sections.length === 1 ? "slide" : "slides"} ·{" "}
+            {outline.sections.length === 1 ? unit : units} ·{" "}
             {report.errorCount}{" "}
             {report.errorCount === 1 ? "error" : "errors"} ·{" "}
             {report.warningCount}{" "}
@@ -182,13 +194,13 @@ export function DocumentView({
 
       {hasFixedCopy ? (
         <p className="viewer-dirty">
-          This deck has been fixed in memory. Your uploaded file is untouched —
+          This file has been fixed in memory. Your uploaded file is untouched —
           download the fixed copy to keep the changes.
         </p>
       ) : null}
 
       <div className="viewer-panes">
-        <nav className="slide-map" aria-label="Slides">
+        <nav className="slide-map" aria-label={format === "pdf" ? "Pages" : "Slides"}>
           <ul>
             {outline.sections.map((section) => {
               const errors = section.issues.filter(
@@ -238,12 +250,12 @@ export function DocumentView({
         <div
           className="slide-stack"
           role="region"
-          aria-label={`${name} slides`}
+          aria-label={`${name} ${units}`}
         >
           {outline.preamble.length > 0 || outline.sections.length === 0 ? (
             <p className="slide-stack-note">
               {outline.sections.length === 0
-                ? "This file has no slides to show."
+                ? `This file has no ${units} to show.`
                 : `Document title: ${model.documentName}`}
             </p>
           ) : null}
@@ -283,6 +295,7 @@ export function DocumentView({
                   : {})}
                 existingTitles={existingTitles}
                 fileName={name}
+                format={format}
                 media={media}
                 onApply={applyFix}
                 onSkip={() => onSetStatus(row.index, "skipped")}

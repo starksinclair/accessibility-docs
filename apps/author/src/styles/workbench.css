@@ -13,12 +13,6 @@
   font-family: var(--font-body);
 }
 
-.route-banner-tools {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
 .workbench-main {
   max-width: 68rem;
   margin: 0 auto;

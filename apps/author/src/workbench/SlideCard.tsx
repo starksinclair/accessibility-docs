@@ -1,5 +1,5 @@
 /**
- * One slide, as structure rather than as a picture (FR-8.3).
+ * One slide or page, as structure rather than as a picture (FR-8.3).
  *
  * The requirements allow a structure view instead of a browser PPTX renderer,
  * and it is the better fit here: it shows exactly what the rules see — the
@@ -64,7 +64,11 @@ export function SlideCard({
       </div>
 
       {section.nodes.length === 0 ? (
-        <p className="slide-card-empty">This slide has no readable content.</p>
+        <p className="slide-card-empty">
+          {section.role === "slide"
+            ? "This slide has no readable content."
+            : "This page has no tagged content a screen reader can read."}
+        </p>
       ) : (
         <div className="slide-card-body">
           {section.nodes.map((entry) => (

@@ -19,13 +19,16 @@
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest",
-    "fixtures": "node scripts/build-fixtures.mjs"
+    "fixtures": "node scripts/build-fixtures.mjs",
+    "fixtures:pdf": "node fixtures/generate-pdf.mjs"
   },
   "license": "ISC",
   "dependencies": {
     "@accessibility-docs/core": "*",
     "fast-xml-parser": "^5.2.5",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.5.438"
   },
   "devDependencies": {
     "typescript": "~5.9.0",

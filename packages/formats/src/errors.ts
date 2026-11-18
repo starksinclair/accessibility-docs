@@ -22,5 +22,9 @@ export type FormatReadErrorCode =
   | "legacy-ppt"
   /** A ZIP, but not an Open XML presentation. */
   | "not-a-presentation"
-  /** The container is readable but its XML is not. */
-  | "corrupt";
+  /** The container is readable but its XML is not, or a PDF will not parse. */
+  | "corrupt"
+  /** Not a PDF at all, though it was offered as one (FR-6.2). */
+  | "not-a-pdf"
+  /** A PDF that needs a password before anything can be read. */
+  | "password-protected";

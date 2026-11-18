@@ -14,13 +14,13 @@ export const uploadLimits = {
 } as const;
 
 /**
- * What the file picker offers. PDF is accepted by the picker but not yet read:
- * the PDF reader arrives in a later milestone, so a .pdf is reported as "not
- * supported yet" rather than silently ignored.
+ * What the file picker offers. Both formats are read in the browser: .pptx by
+ * the PPTX reader (FR-4.1) and .pdf by the PDF reader (FR-4.7). What a file
+ * really is comes from its signature, not this list (FR-6.2).
  */
 export const acceptedFileTypes = ".pptx,.pdf" as const;
 
-export const supportedExtensions = ["pptx"] as const;
+export const supportedExtensions = ["pptx", "pdf"] as const;
 
 /** FR-7.1 weights, exported here so they are adjustable in one place. */
 export const rankingWeights: RankingWeights = DEFAULT_RANKING_WEIGHTS;

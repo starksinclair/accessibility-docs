@@ -31,13 +31,22 @@ const STATUS_LABEL: Record<WorkbenchFile["status"], string> = {
   failed: "Could not read",
 };
 
-/** How many slides a model holds, for the "12 slides" line in the list. */
-function slideCount(file: WorkbenchFile): number {
-  return (
-    file.model?.nodes.filter(
-      (node) => node.type === "section" && node.role === "slide"
-    ).length ?? 0
-  );
+/**
+ * How many slides or pages a file holds, for the "12 slides" line in the
+ * list. A PDF is counted and named in pages, which is what its findings are
+ * grouped by.
+ */
+function sectionCount(file: WorkbenchFile): { count: number; label: string } {
+  const sections =
+    file.model?.nodes.filter((node) => node.type === "section") ?? [];
+  const noun = sections[0]?.type === "section" && sections[0].role === "page"
+    ? "page"
+    : "slide";
+
+  return {
+    count: sections.length,
+    label: sections.length === 1 ? noun : `${noun}s`,
+  };
 }
 
 export function WorkbenchPage() {
@@ -146,6 +155,7 @@ export function WorkbenchPage() {
             name={openFile.name}
             model={openFile.model}
             report={openFile.report}
+            format={openFile.format ?? "pptx"}
             media={media}
             mediaStatus={mediaStatus}
             appliedCount={openFile.appliedCount ?? 0}
@@ -164,10 +174,10 @@ export function WorkbenchPage() {
           <p className="eyebrow">Step 1 · Triage</p>
           <h1>Which file should you fix first?</h1>
           <p className="workbench-lede">
-            Add the PowerPoint files for a course. Each one is read and checked
-            against the same rules as the Google Docs add-on and the editor,
-            then ranked so you can spend your time where it removes the most
-            barriers.
+            Add the PowerPoint and PDF files for a course. Each one is read and
+            checked against the same rules as the Google Docs add-on and the
+            editor, then ranked so you can spend your time where it removes the
+            most barriers.
           </p>
         </div>
 
@@ -213,10 +223,9 @@ export function WorkbenchPage() {
               or drag them here
             </p>
             <p id="dropzone-limits" className="dropzone-limits">
-              PowerPoint (.pptx) files, up to{" "}
+              PowerPoint (.pptx) and PDF files, up to{" "}
               {uploadLimits.maxFilesPerBatch} at a time and{" "}
-              {formatBytes(uploadLimits.maxBytesPerFile)} each. PDF reading
-              arrives in the next milestone.
+              {formatBytes(uploadLimits.maxBytesPerFile)} each.
             </p>
           </div>
 
@@ -330,8 +339,9 @@ export function WorkbenchPage() {
                         {entry.name}
                       </h3>
                       <p className="rank-facts">
-                        {entry.kind.toUpperCase()} · {slideCount(entry)}{" "}
-                        {slideCount(entry) === 1 ? "slide" : "slides"} ·{" "}
+                        {entry.kind.toUpperCase()} ·{" "}
+                        {sectionCount(entry).count} {sectionCount(entry).label}{" "}
+                        ·{" "}
                         {formatBytes(entry.size)}
                       </p>
                     </div>
@@ -392,7 +402,10 @@ export function WorkbenchPage() {
                           : "findings"}
                         <span className="visually-hidden"> in {entry.name}</span>
                       </summary>
-                      <FileFindings issues={entry.report.issues} />
+                      <FileFindings
+                        issues={entry.report.issues}
+                        format={entry.format}
+                      />
                     </details>
                   ) : (
                     <p className="rank-clean">

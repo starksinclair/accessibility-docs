@@ -7,9 +7,12 @@
  * them, which is the privacy promise the page makes (FR-6.5).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PptxFix, SkippedFix } from "@accessibility-docs/formats";
+
 import { uploadLimits } from "@/config/workbench";
 import type {
+  DocumentFix,
+  DocumentFormat,
+  SkippedDocumentFix,
   MediaMap,
   MediaStatus,
   WorkbenchFile,
@@ -19,6 +22,11 @@ import type {
 
 /** How many Applies can be stepped back; each entry holds a whole deck. */
 const UNDO_DEPTH = 10;
+
+const MIME_TYPES: Record<DocumentFormat, string> = {
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  pdf: "application/pdf",
+};
 
 let sequence = 0;
 
@@ -35,7 +43,7 @@ function extensionOf(name: string): string {
 /** What one Apply did, for the message the panel shows afterwards. */
 export interface ApplyResult {
   applied: number;
-  skipped: SkippedFix[];
+  skipped: SkippedDocumentFix[];
   notes: string[];
 }
 
@@ -155,6 +163,7 @@ export function useWorkbenchFiles() {
                 status: "ready",
                 model: response.model,
                 report: response.report,
+                format: response.format,
               }
             : { ...file, status: "failed", reason: response.reason };
         })
@@ -319,7 +328,7 @@ export function useWorkbenchFiles() {
    * so fixes accumulate.
    */
   const applyFixes = useCallback(
-    async (id: string, fixes: PptxFix[]): Promise<ApplyResult> => {
+    async (id: string, fixes: DocumentFix[]): Promise<ApplyResult> => {
       const entry = files.find((file) => file.id === id);
       if (!entry || fixes.length === 0) {
         return { applied: 0, skipped: [], notes: [] };
@@ -368,7 +377,7 @@ export function useWorkbenchFiles() {
     []
   );
 
-  /** FR-11.1 — "<original>-accessible.pptx". */
+  /** FR-11.1 — "<original>-accessible.pptx" or "-accessible.pdf". */
   const downloadFixed = useCallback(
     (id: string) => {
       const entry = files.find((file) => file.id === id);
@@ -376,16 +385,17 @@ export function useWorkbenchFiles() {
         return;
       }
 
-      const base = entry.name.replace(/\.pptx$/i, "");
+      // The format the reader found, not the name it arrived with: a renamed
+      // file still downloads as the kind of file it actually is.
+      const format: DocumentFormat = entry.format ?? "pptx";
+      const base = entry.name.replace(/\.(pptx|pdf)$/i, "");
       const url = URL.createObjectURL(
-        new Blob([entry.fixed.slice()], {
-          type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        })
+        new Blob([entry.fixed.slice()], { type: MIME_TYPES[format] })
       );
 
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${base}-accessible.pptx`;
+      link.download = `${base}-accessible.${format}`;
       document.body.appendChild(link);
       link.click();
       link.remove();

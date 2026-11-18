@@ -81,6 +81,12 @@ html.dark .route-banner {
   background: var(--paper-alt);
 }
 
+.route-banner-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
 .route-banner-label {
   padding: 0.25rem 0.5rem;
   background: var(--carbon);
@@ -201,10 +207,6 @@ html.dark body {
   gap: var(--space-2);
   align-items: flex-end;
   flex-wrap: wrap;
-}
-
-.header-actions .theme-toggle {
-  align-self: center;
 }
 
 html.dark .theme-toggle {

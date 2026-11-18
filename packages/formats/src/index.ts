@@ -22,3 +22,9 @@ export { applyPptxFixes } from "./pptx/pptxWriter.js";
 
 export type { SlideImage } from "./pptx/media.js";
 export { extractPptxMedia } from "./pptx/media.js";
+
+export type { PdfReadOptions } from "./pdf/pdfToModel.js";
+export { pdfToModel } from "./pdf/pdfToModel.js";
+
+export type { PdfFix, PdfWriteResult, SkippedPdfFix } from "./pdf/pdfWriter.js";
+export { applyPdfFixes } from "./pdf/pdfWriter.js";

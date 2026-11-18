@@ -9,7 +9,7 @@ Both tools are available now. No local install is required to use them.
 | **Hub** | Local: `npm run dev:author` then `/` · Deploy: Cloudflare Worker URL (after `npm run deploy`) | Landing page for all three tools |
 | **Checker** | [Accessibility Research Prototype](https://docs.google.com/document/d/1MJitDY4B4eKFei_fvgcy-C6Vwit8reCLoMXnKSyIZuY/edit) | Sign in to Google, open this document, then choose **Accessibility → Open checker**. The menu exists only in this document. The first run asks you to authorize the script. |
 | **Author** | `/author` on the hub · interim: [a11yeditor.netlify.app](https://a11yeditor.netlify.app/) | Write in the browser. **Check** runs the rules. **Save** downloads a new `.a11ydoc.json` file when there are no errors. See [Current limitations](#current-limitations). |
-| **Workbench** | `/workbench` | Upload PowerPoint files, see them ranked by what to fix first, then open one to walk its slides and findings. Repairs and PDF reading land in the next milestones. |
+| **Workbench** | `/workbench` | Upload PowerPoint and PDF files, see them ranked by what to fix first, then open one to walk its slides or pages, apply fixes and download the corrected file. |
 
 Research prototype for CS 499 / Ball State faculty document accessibility ahead of ADA Title II. Three tools share one rules engine in `@accessibility-docs/core`.
 
@@ -23,10 +23,11 @@ Research prototype for CS 499 / Ball State faculty document accessibility ahead 
 Google Docs   →  documentModel.ts →  DocumentModel  ┐
 TipTap editor →  tiptapToModel.ts →  DocumentModel  ┼→  runAccessibilityChecks()
 .a11ydoc.json →  parseDocument()  →  DocumentModel  │
-.pptx         →  pptxToModel()    →  DocumentModel  ┘
+.pptx         →  pptxToModel()    →  DocumentModel  │
+.pdf          →  pdfToModel()     →  DocumentModel  ┘
 ```
 
-`packages/formats` is where parsing dependencies (JSZip, and later pdf.js) live.
+`packages/formats` is where parsing dependencies (JSZip, pdf.js and pdf-lib) live.
 `packages/core` stays free of runtime dependencies because esbuild bundles it
 into Apps Script, which cannot load npm packages at runtime.
 
@@ -35,7 +36,7 @@ into Apps Script, which cannot load npm packages at runtime.
 ```text
 accessibility-docs/
 ├── packages/core/     Shared types, rules, ranking, outline, .a11ydoc.json format
-├── packages/formats/  PPTX (and later PDF) readers → DocumentModel, plus fixtures
+├── packages/formats/  PPTX and PDF readers and writers → DocumentModel, plus fixtures
 ├── apps/author/       Hub + Author + Workbench UI (Vite + React)
 ├── apps/worker/       Cloudflare Worker (static SPA + /api/*)
 ├── src/               Tool A — Apps Script checker (clasp)

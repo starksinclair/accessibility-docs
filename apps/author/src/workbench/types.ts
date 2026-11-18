@@ -3,10 +3,28 @@ import type {
   DocumentModel,
 } from "@accessibility-docs/core";
 import type {
+  PdfFix,
   PptxFix,
   SkippedFix,
+  SkippedPdfFix,
   SlideImage,
 } from "@accessibility-docs/formats";
+
+/** Which reader and writer a file goes through. */
+export type DocumentFormat = "pptx" | "pdf";
+
+/**
+ * A fix for whichever format the file turned out to be.
+ *
+ * The two writers overlap where the fix is the same idea in both formats — a
+ * document title, a description on an image — so the panel that collects a
+ * fix does not have to know which file it is looking at. The worker routes by
+ * the file's own format, not by the fix.
+ */
+export type DocumentFix = PptxFix | PdfFix;
+
+/** A fix the writer would not make, with the reason the user is shown. */
+export type SkippedDocumentFix = SkippedFix | SkippedPdfFix;
 
 /**
  * What the parsing worker is asked to do.
@@ -25,7 +43,7 @@ export type WorkerRequest =
       id: string;
       name: string;
       bytes: ArrayBuffer;
-      fixes: PptxFix[];
+      fixes: DocumentFix[];
     };
 
 export type WorkerResponse =
@@ -35,6 +53,8 @@ export type WorkerResponse =
       ok: true;
       model: DocumentModel;
       report: AccessibilityReport;
+      /** What the file actually is, by signature rather than by name. */
+      format: DocumentFormat;
     }
   | { kind: "media"; id: string; ok: true; images: SlideImage[] }
   | {
@@ -46,7 +66,7 @@ export type WorkerResponse =
       model: DocumentModel;
       report: AccessibilityReport;
       applied: number;
-      skipped: SkippedFix[];
+      skipped: SkippedDocumentFix[];
       notes: string[];
     }
   | {
@@ -66,6 +86,12 @@ export interface WorkbenchFile {
   size: number;
   /** "pptx", "pdf", or whatever the name ends in. */
   kind: string;
+  /**
+   * What the reader found the file to be, once it has been read. It can
+   * disagree with `kind`: a PDF someone renamed .pptx is read as the PDF it
+   * is (FR-6.2).
+   */
+  format?: DocumentFormat;
   /**
    * The browser's handle on the file. Holding it is cheap — it is a reference
    * to the bytes on disk, not a copy — and it lets the viewer re-read the deck

@@ -174,7 +174,10 @@ New workspace package `@accessibility-docs/formats`. Runtime dependencies allowe
 
 **PDF reader `pdfToModel(file)`:**
 - FR-4.7 Use pdf.js: document title from metadata, language, `page.getStructTree()` for tagged structure (headings, Figure with alt, Table with TH or TD), `getTextContent()` to detect image-only pages.
-- FR-4.8 Set `flags.tagged` from the presence of a structure tree. Untagged PDFs still produce a model so they rank and show A016.
+- FR-4.7a **Decision (Milestone 6): the structure tree is the document's semantics.** What a page *looks* like is ignored — no font-size or bold heuristics for headings. Assistive technology reads the tree, so the tree is what is checked, and a PDF that only looks structured is reported as untagged, which is the truth a faculty member needs before re-exporting. Text is matched to elements through marked-content ids (`getTextContent({ includeMarkedContent: true })`), which is the only link the format itself defines between words and tags.
+- FR-4.7b **Decision (Milestone 6): `FigureNode.src` carries the figure's address, not image bytes.** A PPTX picture is a file in the package (`ppt/media/image1.png`); a PDF figure is a marked region of a page's content stream, so there is nothing to extract. `src` is the same pointer as `sourceRef` (`pdf:figure#page=1&mcid=2`), which keeps A007 ("image is missing a source file") meaningful — it fires when the reader genuinely cannot locate the figure — and gives the writer the address it needs for FR-5.8. A consequence: "Suggest with AI" cannot be offered for a PDF figure, because FR-10.2 sends the image itself. The panel says so and takes a written description instead.
+- FR-4.7c An unnumbered `H` element takes its level from how deeply it is nested inside `Sect`, `Part`, `Art` or `Div`, as PDF 1.7 14.8.4.3.1 defines it; `H1` to `H6` are used as given. The first heading on a page becomes that page's section title, which is what the page map and the outline navigate by.
+- FR-4.8 Set `flags.tagged` from the presence of a structure tree. Untagged PDFs still produce a model so they rank and show A016. A page with no tagged content of its own produces a section marker and nothing else: no structure is invented for it.
 
 ### FR-5 `packages/formats`: writers (P0)
 
@@ -193,12 +196,14 @@ Writers take the original file plus a list of approved fixes and return a new fi
 - FR-5.8 Alt text: set `/Alt` on the target Figure structure element (found via `sourceRef`).
 - FR-5.9 (P1) Table headers: change header row elements from `/TD` to `/TH`.
 - FR-5.10 Untagged or scanned PDFs are not fixed. Show: "This PDF needs full tagging (or OCR). Re-export from the source file with accessibility tags on, or use Adobe Acrobat's Autotag."
+- FR-5.10a **Decision (Milestone 6): FR-5.10 applies to structure, not to document properties.** `/Title` (FR-5.6) and `/Lang` (FR-5.7) are catalog and Info entries that exist in every PDF, tagged or not, and both are real improvements a screen reader acts on immediately — so they are still written for an untagged file. A016 stays in the report afterwards: nothing here claims the file is now tagged. Alt text (FR-5.8) needs a structure element to live on, so on an untagged file it is refused with the FR-5.10 message rather than written somewhere that changes nothing.
+- FR-5.11 A figure is found the way the format defines the link: the page's `/StructParents` is a key into the structure tree's parent tree, and the figure's marked-content id indexes that key's array. Where a figure has no marked content of its own, the reader falls back to counting figures on the page (`pdf:figure#page=1&ordinal=2`) and the writer counts the same way. The writer refuses to write `/Alt` onto an element that is not tagged `/Figure`.
 
 **Acceptance:** each writer test re-reads its output with the matching reader and confirms the issue is gone; fixed PPTX opens in PowerPoint with no repair prompt; fixed PDF passes that specific check in Acrobat.
 
 ### FR-6 Workbench: upload (P0)
 
-- FR-6.1 Multi-file picker for `.pptx` and `.pdf`. Max 50 MB per file, 30 files per batch (config). Until the PDF reader lands (FR-4.7), a `.pdf` is accepted by the picker and reported as "PDF reading is not ready yet" rather than silently ignored.
+- FR-6.1 Multi-file picker for `.pptx` and `.pdf`. Max 50 MB per file, 30 files per batch (config). Both formats are read in the browser; which reader runs comes from the file's signature, not its extension (FR-6.2), so a renamed file is still read, checked and downloaded as what it actually is.
 - FR-6.2 Validate by file signature (ZIP for PPTX, `%PDF` for PDF), not only extension.
 - FR-6.3 Per-file status: reading, checking, ready, failed (with reason).
 - FR-6.4 Parse in a Web Worker so large files do not freeze the page.
@@ -221,7 +226,8 @@ Writers take the original file plus a list of approved fixes and return a new fi
 ### FR-8 Workbench: viewer and issue sidebar (P0)
 
 - FR-8.1 Selecting a file opens a two-pane view: document (main) and issue sidebar.
-- FR-8.2 PDF: render with pdf.js (or `react-pdf`). Waiting on the PDF reader (FR-4.7); the viewer itself is format-agnostic, since it works from the outline (`buildOutline`), which groups a model by `section` marker whether those sections are slides or pages.
+- FR-8.2 PDF: render with pdf.js (or `react-pdf`). The viewer is format-agnostic: it works from the outline (`buildOutline`), which groups a model by `section` marker whether those sections are slides or pages, so a PDF opens in the same two-pane view with its pages, headings, figures, alt text and tables, and its page map.
+- FR-8.2a **Decision (Milestone 6): page rasterisation is deferred, not cut.** A PDF shows the same structure view a deck does, for the reason FR-8.3a gives: it shows exactly what the rules see, in real HTML on a page that must itself meet WCAG 2.2 AA. Drawing each page to a canvas beside it is the remaining piece of FR-8.2 and is worth having for "is this the figure I think it is?", which the structure view cannot answer — a PDF figure has no image file to preview (FR-4.7b). It needs a canvas render path and a decision about memory for a 200-page file, so it is listed as remaining work rather than claimed.
 - FR-8.3 PPTX: render slides in the browser. Evaluate a client-side PPTX renderer (for example `pptx-preview`) first. If fidelity is poor, use a **structure view** fallback: one card per slide showing its title, text, images (extracted from the zip) and tables. The structure view is acceptable for the demo.
 - FR-8.3a **Decision (Milestone 4): structure view.** `pptx-preview` is maintained but pulls in `echarts` and `lodash`, and renders a deck as absolutely-positioned `div`s with no semantics — output that would have to be hidden from assistive technology, with the structure rebuilt beside it anyway, on a page that must itself meet WCAG 2.2 AA (NFR-1). The structure view shows exactly what the rules see, in real HTML: headings for slide titles, `img` plus its alt text, and tables with real `th` cells. Revisit only if open question 3 is answered by testing a renderer against three real decks.
 - FR-8.3b Images are extracted on demand, one file at a time (`extractPptxMedia`), rather than at upload: a batch of 30 decks is read and ranked up front, and only the file on screen needs its pictures in memory. The uploaded `File` handle is kept so the deck can be re-read without holding every upload's bytes.
@@ -327,7 +333,7 @@ Add a test runner (Vitest) to `packages/core` and `packages/formats` if none exi
 | Nov 21 to 22 | `packages/formats` PPTX reader; upload and ranking UI (FR-4, FR-6, FR-7) |
 | Nov 23 to 24 | Viewer and sidebar, PPTX structure view or renderer (FR-8) |
 | Nov 25 to 26 | PPTX writer, fix panel, AI endpoint (FR-5, FR-9, FR-10) |
-| Nov 27 | PDF reader and PDF title, language and alt text writer |
+| Nov 27 | PDF reader and PDF title, language and alt text writer — **done 17 November 2026** (FR-4.7, FR-4.8, FR-5.6 to FR-5.11; remaining: FR-8.2a page rasterisation, FR-5.9 PDF table headers) |
 | Nov 28 | Export, accessibility pass on the new pages |
 | Nov 29 | Rehearse with real files; bug fixes only |
 | Nov 30 | Tech Talk |
